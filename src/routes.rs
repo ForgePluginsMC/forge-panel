@@ -4,6 +4,7 @@ use crate::config::{self, ServerConfig, ServerRole};
 use crate::geyser;
 use crate::installer::{self, InstallRequest, ServerKind};
 use crate::mc;
+use crate::player;
 use crate::plugins::{self, PluginSource};
 use crate::servers::{self, ServerManager};
 use crate::AppState;
@@ -572,6 +573,54 @@ struct PlayersInfo {
     max: Option<u32>,
     names: Vec<String>,
     source: String,
+}
+
+/// Full player dossier for the player modal: stats, inventory, enderchest.
+/// Needs RCON (`data get` requires a command response, unlike the stdin
+/// console which is fire-and-forget).
+async fn player_info(
+    State(state): State<Arc<AppState>>,
+    Path((name, player)): Path<(String, String)>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let cfg = server_or_404(&state, &name)?;
+    let port = cfg.rcon_port.ok_or_else(|| {
+        err(
+            StatusCode::BAD_REQUEST,
+            "player details need RCON — set rcon_port/rcon_password on this server",
+        )
+    })?;
+    let pw = cfg.rcon_password.as_deref().unwrap_or("");
+    let info = player::fetch_player(&state.rcon, rcon_host(&cfg), port, pw, &player)
+        .await
+        .map_err(|e| {
+            let msg = format!("{:#}", e);
+            if msg.contains("not found") || msg.contains("invalid player name") {
+                err(StatusCode::NOT_FOUND, msg)
+            } else {
+                err(StatusCode::BAD_GATEWAY, format!("RCON failed: {}", msg))
+            }
+        })?;
+    Ok(Json(serde_json::to_value(info).unwrap()))
+}
+
+/// Banned players, for the pardon buttons.
+async fn ban_list(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let cfg = server_or_404(&state, &name)?;
+    let port = cfg
+        .rcon_port
+        .ok_or_else(|| err(StatusCode::BAD_REQUEST, "needs RCON"))?;
+    let pw = cfg.rcon_password.as_deref().unwrap_or("");
+    let out = state
+        .rcon
+        .run(rcon_host(&cfg), port, pw, "banlist players")
+        .await
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("RCON failed: {:#}", e)))?;
+    Ok(Json(
+        serde_json::json!({ "banned": player::parse_banlist(&out) }),
+    ))
 }
 
 async fn players(
@@ -1309,6 +1358,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/servers/{name}/command", post(send_command))
         .route("/api/servers/{name}/tps", get(tps))
         .route("/api/servers/{name}/players", get(players))
+        .route("/api/servers/{name}/player/{player}", get(player_info))
+        .route("/api/servers/{name}/bans", get(ban_list))
         .route("/api/servers/{name}/console", get(console_stream))
         .route("/api/servers/{name}/files", get(list_files))
         .route("/api/servers/{name}/file", get(read_file).post(write_file))

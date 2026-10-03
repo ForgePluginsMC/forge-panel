@@ -5,6 +5,7 @@ mod db;
 mod geyser;
 mod installer;
 mod mc;
+mod player;
 mod plugins;
 mod rcon;
 mod routes;

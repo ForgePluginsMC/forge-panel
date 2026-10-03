@@ -59,7 +59,17 @@
 
   <div id="tab-players" style="display:none">
     <div class="card screws"><h3>Players</h3><div id="players-list" class="muted">loading…</div></div>
+    <div class="card screws" id="banned-card" style="display:none"><h3>Banned</h3><div id="banned-list"></div></div>
   </div>
+
+<div class="modal" id="player-modal" style="display:none">
+  <div class="box wide">
+    <div style="display:flex; justify-content:flex-end">
+      <button class="btn" id="player-modal-close">✕</button>
+    </div>
+    <div id="player-modal-body"></div>
+  </div>
+</div>
 
   <div id="tab-files" style="display:none">
     <div class="card screws">
@@ -366,16 +376,212 @@ async function sendCmd() {
 document.getElementById("cmd-send").onclick = sendCmd;
 document.getElementById("cmd-input").addEventListener("keydown", e => { if (e.key === "Enter") sendCmd(); });
 
-// Players
+// Players — head thumbnails, click a row for the full player panel.
+function headImg(name, size) {
+  return `<img class="phead" width="${size}" height="${size}" alt=""
+    src="https://minotar.net/helm/${encodeURIComponent(name)}/${size}.png"
+    onerror="this.style.display='none'">`;
+}
+
 async function loadPlayers() {
   const el = document.getElementById("players-list");
+  const bcard = document.getElementById("banned-card");
+  const bel = document.getElementById("banned-list");
   try {
-    const p = await api("GET", `/api/servers/${enc}/players`);
-    el.innerHTML = p.online != null
-      ? `<span class="seg-label">Online</span><br><span class="seg">${p.online}</span> <span class="muted">/ ${p.max}</span> <span class="small muted">(via ${esc(p.source)})</span>` +
-        (p.names.length ? `<div style="margin-top:8px">${p.names.map(n => `<span class="backend-chip">${esc(n)}</span>`).join("")}</div>` : "")
-      : "unavailable";
-  } catch (e) { el.textContent = "error: " + e.message; }
+    const [p, b] = await Promise.all([
+      api("GET", `/api/servers/${enc}/players`),
+      api("GET", `/api/servers/${enc}/bans`).catch(() => ({ banned: [] })),
+    ]);
+    el.innerHTML = p.names.length
+      ? p.names.map(n => `<div class="player-row" data-player="${esc(n)}" title="open player panel">
+          ${headImg(n, 36)}<span class="pname">${esc(n)}</span><span class="muted small">→</span>
+        </div>`).join("")
+      : `<span class="muted">no players online</span>`;
+    el.querySelectorAll(".player-row").forEach(r => r.onclick = () => openPlayer(r.dataset.player));
+    if (b.banned && b.banned.length) {
+      bcard.style.display = "block";
+      bel.innerHTML = b.banned.map(n => `<div class="player-row">
+          ${headImg(n, 36)}<span class="pname">${esc(n)}</span>
+          <button class="btn" data-pardon="${esc(n)}">Pardon</button>
+        </div>`).join("");
+      bel.querySelectorAll("[data-pardon]").forEach(btn => btn.onclick = async () => {
+        try {
+          await api("POST", `/api/servers/${enc}/command`, { command: `pardon ${btn.dataset.pardon}` });
+          loadPlayers();
+        } catch (e) { el.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
+      });
+    } else { bcard.style.display = "none"; bel.innerHTML = ""; }
+  } catch (e) { el.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
+}
+
+// ---- Player modal ----
+let curPlayer = null;
+document.getElementById("player-modal-close").onclick = () =>
+  document.getElementById("player-modal").style.display = "none";
+document.getElementById("player-modal").onclick = (e) => {
+  if (e.target.id === "player-modal") e.target.style.display = "none";
+};
+
+function prettyItem(id) {
+  return id.replace(/^minecraft:/, "").split("_")
+    .map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(" ");
+}
+
+function invGrid(items, slots, cols) {
+  const bySlot = {};
+  items.forEach(it => bySlot[it.slot] = it);
+  return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, 1fr)">` +
+    slots.map(s => {
+      const it = bySlot[s];
+      return `<div class="inv-slot" title="${it ? esc(it.id) : ""}">` +
+        (it ? `<span class="inv-item">${esc(prettyItem(it.id))}</span><span class="inv-count">${it.count}</span>` : "") +
+        `</div>`;
+    }).join("") + `</div>`;
+}
+
+const GM_NAMES = { 0: "Survival", 1: "Creative", 2: "Adventure", 3: "Spectator" };
+
+function playerModalHTML(info) {
+  const n = info.name, e = encodeURIComponent(n);
+  const stat = (label, val) =>
+    `<div class="pstat"><div class="rack-label">${label}</div><div class="seg-sm">${val}</div></div>`;
+  const hp = info.health != null ? Math.max(0, Math.round(info.health)) : "—";
+  const pos = info.pos ? info.pos.map(v => Math.round(v * 10) / 10).join(", ") : "—";
+  // inventory slot layout: armor/offhand, main 9-35, hotbar 0-8
+  const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  const armorRow = [103, 102, 101, 100, -106];
+  return `
+  <div class="phead-row">
+    <img class="phead-lg" alt="" src="https://minotar.net/helm/${e}/64.png" onerror="this.style.display='none'">
+    <div>
+      <h3 style="margin:0">${esc(n)}</h3>
+      <div class="small muted">${info.uuid ? esc(info.uuid) : "uuid unknown"}</div>
+    </div>
+    <img class="pskin" alt="" src="https://minotar.net/body/${e}/100.png" onerror="this.style.display='none'">
+  </div>
+  <div class="pstats">
+    ${stat("Health", hp + (info.health != null ? " / 20" : ""))}
+    ${stat("Food", info.food != null ? info.food + " / 20" : "—")}
+    ${stat("XP level", info.xp_level != null ? info.xp_level + (info.xp_total != null ? ` <span class="muted small">(${info.xp_total} xp)</span>` : "") : "—")}
+    ${stat("Gamemode", info.gamemode != null ? (GM_NAMES[info.gamemode] || info.gamemode) : "—")}
+    ${stat("Dimension", info.dimension ? esc(info.dimension.replace(/^minecraft:/, "")) : "—")}
+    ${stat("Position", esc(pos))}
+  </div>
+  <h4>Actions</h4>
+  <div class="pactions">
+    <button class="arcade green" data-act="heal">HEAL</button>
+    <button class="arcade green" data-act="feed">FEED</button>
+    <button class="arcade amber" data-act="freeze">FREEZE</button>
+    <button class="arcade amber" data-act="unfreeze">UNFREEZE</button>
+    <button class="arcade red" data-act="kill">KILL</button>
+    <button class="arcade red" data-act="kick">KICK</button>
+    <button class="arcade red" data-act="ban">BAN</button>
+    <button class="arcade amber" data-act="op">OP</button>
+    <button class="arcade amber" data-act="deop">DEOP</button>
+    <button class="arcade" data-act="mute" disabled title="vanilla/Paper has no mute command — needs a chat plugin">MUTE</button>
+  </div>
+  <div class="prow">
+    <div><label class="rack-label">Gamemode</label>
+      <select id="p-gamemode">
+        <option value="survival">Survival</option><option value="creative">Creative</option>
+        <option value="adventure">Adventure</option><option value="spectator">Spectator</option>
+      </select>
+      <button class="btn" data-act="gamemode">Set</button>
+    </div>
+    <div><label class="rack-label">Give</label>
+      <input id="p-give-item" placeholder="minecraft:diamond" size="18">
+      <input id="p-give-count" placeholder="1" size="4">
+      <button class="btn" data-act="give">Give</button>
+    </div>
+    <div><label class="rack-label">Teleport</label>
+      <input id="p-tp-x" placeholder="x" size="6"><input id="p-tp-y" placeholder="y" size="6"><input id="p-tp-z" placeholder="z" size="6">
+      <button class="btn" data-act="tp">TP</button>
+    </div>
+  </div>
+  <p class="small muted" id="paction-out"></p>
+  <h4>Inventory</h4>
+  ${invGrid(info.inventory, armorRow, 5)}
+  <div style="height:8px"></div>
+  ${invGrid(info.inventory, range(9, 35), 9)}
+  <div style="height:8px"></div>
+  ${invGrid(info.inventory, range(0, 8), 9)}
+  <h4>Ender chest</h4>
+  ${invGrid(info.ender, range(0, 26), 9)}`;
+}
+
+async function pcmd(cmd, after) {
+  const out = document.getElementById("paction-out");
+  out.textContent = "…";
+  try {
+    await api("POST", `/api/servers/${enc}/command`, { command: cmd });
+    out.textContent = "done";
+    setTimeout(() => {
+      if (after) after();
+      else if (curPlayer) openPlayer(curPlayer, true);
+    }, 900);
+  } catch (e) { out.textContent = "error: " + e.message; }
+}
+
+async function pcmd2(cmd1, cmd2, after) {
+  const out = document.getElementById("paction-out");
+  out.textContent = "…";
+  try {
+    await api("POST", `/api/servers/${enc}/command`, { command: cmd1 });
+    await api("POST", `/api/servers/${enc}/command`, { command: cmd2 });
+    out.textContent = "done";
+    setTimeout(() => {
+      if (after) after();
+      else if (curPlayer) openPlayer(curPlayer, true);
+    }, 900);
+  } catch (e) { out.textContent = "error: " + e.message; }
+}
+
+function bindPlayerActions() {
+  const n = curPlayer;
+  const val = (id) => document.getElementById(id).value.trim();
+  const gone = () => {
+    document.getElementById("player-modal").style.display = "none";
+    curPlayer = null;
+    loadPlayers();
+  };
+  document.querySelectorAll("#player-modal-body [data-act]").forEach(b => b.onclick = () => {
+    const a = b.dataset.act;
+    if (a === "heal") pcmd2(`effect give ${n} minecraft:instant_health 1 20`, `effect give ${n} minecraft:saturation 2 20`);
+    else if (a === "feed") pcmd(`effect give ${n} minecraft:saturation 2 20`);
+    else if (a === "freeze") pcmd2(`effect give ${n} minecraft:slowness infinite 255 true`, `effect give ${n} minecraft:mining_fatigue infinite 255 true`);
+    else if (a === "unfreeze") pcmd2(`effect clear ${n} minecraft:slowness`, `effect clear ${n} minecraft:mining_fatigue`);
+    else if (a === "kill") { if (confirm(`Kill ${n}?`)) pcmd(`kill ${n}`, gone); }
+    else if (a === "kick") { const r = prompt(`Kick reason for ${n}:`, ""); if (r !== null) pcmd(`kick ${n} ${r}`.trim(), gone); }
+    else if (a === "ban") { const r = prompt(`Ban reason for ${n}:`, ""); if (r !== null) pcmd(`ban ${n} ${r}`.trim(), gone); }
+    else if (a === "op") pcmd(`op ${n}`);
+    else if (a === "deop") pcmd(`deop ${n}`);
+    else if (a === "gamemode") pcmd(`gamemode ${val("p-gamemode")} ${n}`);
+    else if (a === "give") {
+      const item = val("p-give-item"), count = val("p-give-count") || "1";
+      if (!item) return;
+      pcmd(`give ${n} ${item} ${count}`);
+    }
+    else if (a === "tp") {
+      const x = val("p-tp-x"), y = val("p-tp-y"), z = val("p-tp-z");
+      if (!x || !y || !z) return;
+      pcmd(`tp ${n} ${x} ${y} ${z}`);
+    }
+  });
+}
+
+async function openPlayer(name, quiet) {
+  curPlayer = name;
+  document.getElementById("player-modal").style.display = "flex";
+  const body = document.getElementById("player-modal-body");
+  if (!quiet) body.innerHTML = `<p class="muted">loading…</p>`;
+  try {
+    const info = await api("GET", `/api/servers/${enc}/player/${encodeURIComponent(name)}`);
+    body.innerHTML = playerModalHTML(info);
+    bindPlayerActions();
+  } catch (e) {
+    body.innerHTML = `<p class="error">${esc(e.message)}</p>
+      <p class="small muted">Player details need RCON configured on this server (console commands still work without it).</p>`;
+  }
 }
 
 // Files
