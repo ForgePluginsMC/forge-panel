@@ -535,11 +535,9 @@ function watchJob(id, serverName) {
   };
   es.addEventListener("done", (e) => {
     es.close(); loadJobs();
-    try {
-      const d = JSON.parse(e.data);
-      if (d.status === "done" && serverName)
-        setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(serverName); }, 1500);
-    } catch {}
+    // Backend sends plain "done" string (not JSON)
+    if (e.data === "done" && serverName)
+      setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(serverName); }, 1500);
   });
 }
 
