@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    // Config load refuses port 25565 and duplicate ports outright.
+    // Config load refuses duplicate ports outright.
     let cfg = Config::load(&config_path)?;
     let panel = cfg.panel();
     std::fs::create_dir_all(&panel.data_dir)

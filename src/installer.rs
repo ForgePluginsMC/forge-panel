@@ -1,5 +1,5 @@
 use crate::auth::new_secret;
-use crate::config::{self, ServerConfig, FORBIDDEN_PORT};
+use crate::config::{self, ServerConfig};
 use crate::AppState;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -586,7 +586,7 @@ pub async fn start_install(state: Arc<AppState>, req: InstallRequest) -> Result<
 async fn run_install(state: Arc<AppState>, job_id: &str, req: InstallRequest) -> Result<()> {
     let log = |m: String| state.jobs.push(job_id, m);
 
-    // Allocate ports (never 25565).
+    // Allocate ports.
     let (port, rcon_port) = allocate_ports(&state)?;
     log(format!("assigned ports: game {} / rcon {}", port, rcon_port));
 
@@ -699,16 +699,16 @@ fn port_is_free(port: u16) -> bool {
 
 fn allocate_ports(state: &Arc<AppState>) -> Result<(u16, u16)> {
     let used = state.config.read().unwrap().used_ports();
-    let mut port = 25570u16;
+    let mut port = 25565u16;
     loop {
-        if port == FORBIDDEN_PORT || used.contains(&port) || !port_is_free(port) {
+        if used.contains(&port) || !port_is_free(port) {
             port += 1;
             continue;
         }
         break;
     }
     let mut rcon = port + 1000;
-    while rcon == FORBIDDEN_PORT || used.contains(&rcon) || !port_is_free(rcon) {
+    while used.contains(&rcon) || !port_is_free(rcon) {
         rcon += 1;
     }
     if port >= 60000 || rcon >= 65500 {
@@ -907,7 +907,7 @@ pub async fn import_server(state: Arc<AppState>, req: ImportRequest) -> Result<(
         })
         .context("no jar file found in that directory")?;
 
-    // Read server-port from server.properties if present; refuse 25565.
+    // Read server-port from server.properties if present.
     let mut port: u16 = 0;
     let props_path = req.dir.join("server.properties");
     if props_path.is_file() {
@@ -925,13 +925,6 @@ pub async fn import_server(state: Arc<AppState>, req: ImportRequest) -> Result<(
         let (p, _) = allocate_ports(&state)?;
         port = p;
     }
-    if port == FORBIDDEN_PORT {
-        bail!(
-            "refusing to import: this server uses port {}, which is off-limits",
-            FORBIDDEN_PORT
-        );
-    }
-
     let entry = ServerConfig {
         name: req.name.clone(),
         dir: req.dir,

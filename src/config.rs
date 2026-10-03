@@ -3,9 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-/// Port that must never be managed by the panel (reserved).
-pub const FORBIDDEN_PORT: u16 = 25565;
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct PanelSettings {
     #[serde(default = "default_bind")]
@@ -110,12 +107,6 @@ impl Config {
     pub fn validate(&self) -> Result<()> {
         let mut seen: HashMap<u16, String> = HashMap::new();
         let mut claim = |port: u16, what: &str, server: &str| -> Result<()> {
-            if port == FORBIDDEN_PORT {
-                bail!(
-                    "refusing to manage server '{}': port {} is reserved/off-limits",
-                    server, FORBIDDEN_PORT
-                );
-            }
             if let Some(other) = seen.insert(port, format!("{} ({})", server, what)) {
                 bail!(
                     "port conflict: {} is claimed by both '{}' and server '{}'",
@@ -129,16 +120,7 @@ impl Config {
                 bail!("server entry with empty name");
             }
             if s.is_remote() {
-                // Remote entries bind no local ports, so they claim nothing —
-                // but the 25565 ban and the RCON requirement still apply.
-                for p in [s.port].into_iter().chain(s.rcon_port).chain(s.query_port) {
-                    if p == FORBIDDEN_PORT {
-                        bail!(
-                            "refusing remote server '{}': port {} is reserved/off-limits",
-                            s.name, p
-                        );
-                    }
-                }
+                // Remote entries bind no local ports, so they claim nothing.
                 if s.rcon_port.is_none() {
                     bail!(
                         "remote server '{}' needs rcon_port (RCON is how the panel talks to it)",
@@ -320,22 +302,6 @@ mod tests {
     }
 
     #[test]
-    fn remote_still_bans_25565() {
-        let cfg = Config {
-            panel: None,
-            servers: vec![remote("r1", 25565)],
-        };
-        assert!(cfg.validate().is_err());
-        let cfg = Config {
-            panel: None,
-            servers: vec![local("l1", 25570), {
-                let mut r = remote("r2", 25571);
-                r.rcon_port = Some(25565);
-                r
-            }],
-        };
-        assert!(cfg.validate().is_err());
-    }
 
     #[test]
     fn local_port_conflict_still_caught() {

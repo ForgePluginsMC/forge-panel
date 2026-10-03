@@ -1260,7 +1260,7 @@ async fn add_remote_server(
         behind_proxy: None,
         remote_host: Some(host.to_string()),
     };
-    // append_server validates the merged config (25565 ban, rcon required).
+    // append_server validates the merged config (rcon required).
     config::append_server(&state.config_path, &entry)
         .map_err(|e| err(StatusCode::BAD_REQUEST, format!("{:#}", e)))?;
     let reloaded = config::Config::load(&state.config_path)
