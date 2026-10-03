@@ -6,7 +6,7 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Orbitron:wght@500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Orbitron:wght@500;600;700;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet"/>
 <script>
     tailwind.config = {
       theme: {
@@ -22,11 +22,20 @@
             'neon-amber': '#ff9900',
             'neon-crimson': '#ff2a5f',
             'neon-yellow': '#ffd600',
+            'cyber-cyan': '#00f0ff',
+            'cyber-amber': '#ff9900',
+            'cyber-red': '#ff2a5f',
+            'cyber-green': '#00ff88',
+            'cyber-panel': '#0d1826',
+            'cyber-surface': '#09111c',
+            'cyber-void': '#04080e',
+            'cyber-border': '#15293f',
           },
           fontFamily: {
             orbitron: ['Orbitron', 'sans-serif'],
             mono: ['"Share Tech Mono"', 'monospace'],
             code: ['"JetBrains Mono"', 'monospace'],
+            rajdhani: ['Rajdhani', 'sans-serif'],
           }
         }
       }
@@ -295,7 +304,6 @@ CONSOLE STREAM // ACTIVE SESSION
 
 <div class="modal" id="player-modal" style="display:none">
 <div class="box wide">
-<div style="display:flex; justify-content:flex-end"><button class="btn" id="player-modal-close">✕</button></div>
 <div id="player-modal-body"></div>
 </div>
 </div>
@@ -876,7 +884,7 @@ function closePlayerModal() {
   curPlayer = null;
   document.getElementById("player-modal").style.display = "none";
 }
-document.getElementById("player-modal-close").onclick = closePlayerModal;
+const pmc = document.getElementById("player-modal-close"); if (pmc) pmc.onclick = closePlayerModal;
 document.getElementById("player-modal").onclick = (e) => {
   if (e.target.id === "player-modal") closePlayerModal();
 };
