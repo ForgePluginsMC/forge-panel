@@ -239,12 +239,19 @@ pub async fn modrinth_versions(
     let loaders_q = serde_json::to_string(loaders).unwrap();
     let games_q = serde_json::to_string(game_versions).unwrap();
     let key = format!("modrinth:versions:{}:{}:{}", id, loaders_q, games_q);
-    let url = format!(
-        "https://api.modrinth.com/v2/project/{}/version?loaders={}&game_versions={}",
-        id,
-        urlencode(&loaders_q),
-        urlencode(&games_q)
-    );
+    // Only include filters if non-empty; empty arrays confuse the API.
+    let mut url = format!("https://api.modrinth.com/v2/project/{}/version", id);
+    let mut params = vec![];
+    if !loaders.is_empty() {
+        params.push(format!("loaders={}", urlencode(&loaders_q)));
+    }
+    if !game_versions.is_empty() {
+        params.push(format!("game_versions={}", urlencode(&games_q)));
+    }
+    if !params.is_empty() {
+        url.push('?');
+        url.push_str(&params.join("&"));
+    }
     let body = state.cached_get(&key, CACHE_TTL, &url, MODRINTH_UA).await?;
     Ok(serde_json::from_str(&body).context("parsing modrinth versions")?)
 }

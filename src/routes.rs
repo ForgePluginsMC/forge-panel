@@ -1449,11 +1449,10 @@ async fn plugins_modrinth_versions(
     State(state): State<Arc<AppState>>,
     Path((name, id)): Path<(String, String)>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let cfg = server_or_404(&state, &name)?;
-    let loaders = ["paper", "spigot", "purpur", "bukkit"];
-    // Fetch all versions; frontend shows MC versions in the label.
+    let _cfg = server_or_404(&state, &name)?;
+    // Fetch all versions; frontend shows MC versions and loaders in the label.
     // The search list already filters incompatible plugins.
-    let versions = plugins::modrinth_versions(&state, &id, &loaders, &[])
+    let versions = plugins::modrinth_versions(&state, &id, &[], &[])
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
     Ok(Json(serde_json::json!({ "versions": versions })))
