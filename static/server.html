@@ -756,7 +756,7 @@ async function refreshRack() {
   if (needle) {
     const rad = (180 + pct * 180) * Math.PI / 180;
     const x2 = 60 + 37 * Math.cos(rad);
-    const y2 = 20 + 37 * Math.sin(rad);
+    const y2 = 20 - 37 * Math.sin(rad);
     needle.setAttribute("x2", x2.toFixed(1));
     needle.setAttribute("y2", y2.toFixed(1));
   }
