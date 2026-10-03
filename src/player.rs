@@ -270,8 +270,6 @@ pub fn gamemode_name(gm: i32) -> &'static str {
 const INV_SLOTS: &[i32] = &[
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
     24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-    // Armor: try both vanilla NBT slots (100-103) and Bukkit slots (36-39)
-    36, 37, 38, 39, 100, 101, 102, 103, -106,
 ];
 const ENDER_SLOTS: &[i32] = &[
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
@@ -282,6 +280,48 @@ const ENDER_SLOTS: &[i32] = &[
 ///
 /// `data get` truncates long NBT with `...`, so a single full-list fetch is
 /// unreliable once the player has more than a couple of items. Try the cheap
+/// Fetch equipped armor/offhand via the 1.21+ `equipment` NBT tag.
+/// Maps: head→103, chest→102, legs→101, feet→100, offhand→-106.
+async fn fetch_equipment(
+    pool: &RconPool,
+    host: &str,
+    port: u16,
+    pw: &str,
+    player: &str,
+) -> Vec<ItemStack> {
+    let slots = [
+        ("equipment.head", 103),
+        ("equipment.chest", 102),
+        ("equipment.legs", 101),
+        ("equipment.feet", 100),
+        ("equipment.offhand", -106),
+    ];
+    let mut items = Vec::new();
+    for (path, slot) in slots {
+        // Empty slots return "{}" or error → skipped.
+        if let Ok(raw) = data_get(pool, host, port, pw, player, path).await {
+            let raw = raw.trim();
+            if raw == "{}" || raw.is_empty() {
+                continue;
+            }
+            // Equipment items have no Slot tag; parse id/count and assign slot.
+            if let Some(id_raw) = extract_field(raw, "id") {
+                if let Some(id) = id_raw.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
+                    let count_raw = extract_field(raw, "Count")
+                        .or_else(|| extract_field(raw, "count"));
+                    let count = count_raw.and_then(|c| parse_int(c)).unwrap_or(1);
+                    items.push(ItemStack {
+                        slot,
+                        id: id.to_string(),
+                        count,
+                    });
+                }
+            }
+        }
+    }
+    items
+}
+
 /// full fetch first; if it comes back truncated, fall back to per-slot
 /// queries (`Inventory[{Slot:0b}]`), which are short and never truncated.
 async fn fetch_items(
@@ -296,7 +336,7 @@ async fn fetch_items(
     let mut items = Vec::new();
     // Armor/offhand slots (100-103, -106) are often missing from the bulk
     // Inventory fetch — always query them individually.
-    let special: Vec<i32> = slots.iter().copied().filter(|&s| s >= 36 || s < 0).collect();
+    let special: Vec<i32> = slots.iter().copied().filter(|&s| s >= 100 || s < 0).collect();
     let bulk: Vec<i32> = slots.iter().copied().filter(|&s| !(s >= 100 || s < 0)).collect();
 
     if let Ok(raw) = data_get(pool, host, port, pw, player, path).await {
@@ -314,16 +354,7 @@ async fn fetch_items(
         // Empty slots answer "Found no elements matching..." → Err → skipped.
         match data_get(pool, host, port, pw, player, &slot_path).await {
             Ok(raw) => {
-                if let Some(mut item) = parse_item(&raw) {
-                    // Remap Bukkit armor slots (36-39) to vanilla NBT slots (100-103)
-                    // 36=boots→100, 37=leggings→101, 38=chestplate→102, 39=helmet→103
-                    item.slot = match item.slot {
-                        36 => 100,
-                        37 => 101,
-                        38 => 102,
-                        39 => 103,
-                        s => s,
-                    };
+                if let Some(item) = parse_item(&raw) {
                     items.push(item);
                 }
             }
@@ -381,8 +412,15 @@ pub async fn fetch_player(
         .await
         .ok()
         .and_then(|s| parse_pos(&s));
-    let inventory = fetch_items(pool, host, port, pw, player, "Inventory", INV_SLOTS).await;
+    let mut inventory = fetch_items(pool, host, port, pw, player, "Inventory", INV_SLOTS).await;
     let ender = fetch_items(pool, host, port, pw, player, "EnderItems", ENDER_SLOTS).await;
+    // 1.21+: equipped armor/offhand live under `equipment`, not `Inventory`.
+    let equipment = fetch_equipment(pool, host, port, pw, player).await;
+    // Merge: equipment takes precedence for armor/offhand slots.
+    let equip_slots: std::collections::HashSet<i32> = equipment.iter().map(|it| it.slot).collect();
+    inventory.retain(|it| !equip_slots.contains(&it.slot));
+    inventory.extend(equipment);
+    inventory.sort_by_key(|it| it.slot);
 
     Ok(PlayerInfo {
         name: player.to_string(),
