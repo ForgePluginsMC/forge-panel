@@ -1,4 +1,6 @@
-<p align="center" style="font-size:64px;">🔥</p>
+<p align="center">
+  <img src="assets/logo.webp" width="160" alt="forge-panel logo">
+</p>
 
 <h1 align="center">forge-panel</h1>
 
