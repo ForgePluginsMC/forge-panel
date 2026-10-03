@@ -747,7 +747,11 @@ function playerModalHTML(info) {
           </div>
         </div>
         <div id="inv-view-ender" style="display:${invView === 'ender' ? 'block' : 'none'}">
-          <div class="grid grid-cols-9 gap-1.5 sm:gap-2">${invGrid(info.ender, range(0, 26), 9, true)}</div>
+          <div class="grid grid-cols-9 gap-1.5 sm:gap-2">${(() => {
+            const bySlot = new Map();
+            (info.ender || []).forEach(it => { if (it && it.slot !== undefined) bySlot.set(Number(it.slot), it); });
+            return range(0, 26).map(s => invSlot(bySlot.get(s), null, s, true)).join("");
+          })()}</div>
         </div>
       </section>
 
