@@ -472,6 +472,33 @@ async fn start_server(
     Ok(Json(serde_json::json!({ "ok": true })))
 }
 
+async fn delete_server(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let cfg = server_or_404(&state, &name)?;
+    // Stop if running (local only).
+    if !cfg.is_remote() {
+        let _ = state.servers.stop(&cfg).await;
+    }
+    // Remove from config and persist.
+    {
+        let mut c = state.config.write().unwrap();
+        c.servers.retain(|s| s.name != name);
+        config::write_config(&state.config_path, &c)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, format!("{:#}", e)))?;
+    }
+    // Delete the server directory (local only).
+    if !cfg.is_remote() {
+        let dir = std::path::Path::new(&cfg.dir);
+        if dir.exists() {
+            std::fs::remove_dir_all(dir)
+                .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, format!("{:#}", e)))?;
+        }
+    }
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
 async fn stop_server(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
@@ -1677,6 +1704,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/servers/remote", post(add_remote_server))
         .route("/api/servers/{name}/start", post(start_server))
         .route("/api/servers/{name}/stop", post(stop_server))
+        .route("/api/servers/{name}", delete(delete_server))
         .route("/api/servers/{name}/restart", post(restart_server))
         .route("/api/servers/{name}/command", post(send_command))
         .route("/api/servers/{name}/tps", get(tps))

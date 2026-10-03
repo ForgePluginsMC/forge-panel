@@ -331,6 +331,9 @@
 <button id="a-kill" class="flex-1 py-1.5 px-2 bg-panel border border-neon-crimson/50 hover:border-neon-crimson text-neon-crimson hover:bg-neon-crimson/10 text-xs font-mono uppercase tracking-wider rounded transition-colors">KILL INSTANCE</button>
 <button id="a-backup" class="flex-1 py-1.5 px-2 bg-panel border border-panel-border-bright hover:border-neon-cyan text-slate-300 hover:text-neon-cyan text-xs font-mono uppercase tracking-wider rounded transition-colors">BACKUP NOW</button>
 </div>
+<div class="flex items-center space-x-2 mt-2">
+<button id="a-delete" class="flex-1 py-1.5 px-2 bg-panel border border-neon-crimson hover:bg-neon-crimson hover:text-white text-neon-crimson text-xs font-mono uppercase tracking-wider rounded transition-colors">DELETE SERVER</button>
+</div>
 </div>
 </div>
 </section>
@@ -705,6 +708,11 @@ async function refreshHeader() {
   const sa = document.getElementById("a-start"); if (sa) sa.onclick = () => go("start");
   const kl = document.getElementById("a-kill"); if (kl) kl.onclick = () => { if (confirm("Kill server process?")) go("kill"); };
   const bk = document.getElementById("a-backup"); if (bk) bk.onclick = () => go("backup");
+  const del = document.getElementById("a-delete"); if (del) del.onclick = async () => {
+    if (!confirm(`Delete server "${NAME}"?\n\nThis stops the server, removes it from the panel, and deletes all its files. This cannot be undone.`)) return;
+    try { await api("DELETE", `/api/servers/${enc}`); window.location.href = "/"; }
+    catch (e) { document.getElementById("err").textContent = e.message; }
+  };
   // settings form
   if (s.xms_mb) { document.getElementById("set-xms").value = s.xms_mb; document.getElementById("set-xms-val").textContent = s.xms_mb; }
   if (s.xmx_mb) { document.getElementById("set-xmx").value = s.xmx_mb; document.getElementById("set-xmx-val").textContent = s.xmx_mb; }
