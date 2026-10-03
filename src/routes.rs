@@ -348,15 +348,29 @@ struct SystemInfo {
     ram_total_mb: Option<u64>,
     ram_allocated_mb: u64,
     ram_allocated_complete: bool,
+    cpu_pct: Option<f64>,
+    cpu_cores: Option<u32>,
+    disk_used_gb: Option<f64>,
+    disk_total_gb: Option<f64>,
+    net_rx_mbps: Option<f64>,
+    net_tx_mbps: Option<f64>,
 }
 
 async fn system_info(State(state): State<Arc<AppState>>) -> Json<SystemInfo> {
     let cfgs: Vec<ServerConfig> = state.config.read().unwrap().servers.clone();
     let (allocated, complete) = state.servers.allocated_mb(&cfgs);
+    let (disk_used, disk_total) = servers::disk_usage_gb().unwrap_or((0.0, 0.0));
+    let (rx, tx) = servers::network_mbps().unwrap_or((0.0, 0.0));
     Json(SystemInfo {
         ram_total_mb: servers::system_ram_mb(),
         ram_allocated_mb: allocated,
         ram_allocated_complete: complete,
+        cpu_pct: servers::system_cpu_pct(),
+        cpu_cores: servers::cpu_cores(),
+        disk_used_gb: if disk_total > 0.0 { Some(disk_used) } else { None },
+        disk_total_gb: if disk_total > 0.0 { Some(disk_total) } else { None },
+        net_rx_mbps: Some(rx),
+        net_tx_mbps: Some(tx),
     })
 }
 

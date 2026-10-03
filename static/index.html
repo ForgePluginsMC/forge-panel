@@ -88,10 +88,26 @@ body { background-color:#080c14; background-image:linear-gradient(to right,rgba(
       <div class="lg:col-span-8">
         <div class="text-xs font-mono mb-2 flex justify-between"><span class="text-slate-300 font-bold uppercase tracking-wider">Allocation</span><span id="sys-ram-text" class="text-cyber-cyan"></span></div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Servers</span><span id="stat-servers" class="font-mono text-lg font-bold text-slate-100">—</span></div>
-          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Running</span><span id="stat-running" class="font-mono text-lg font-bold text-emerald-400">—</span></div>
-          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Players</span><span id="stat-players" class="font-mono text-lg font-bold text-cyber-cyan">—</span></div>
-          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Ports</span><span id="stat-ports" class="font-mono text-lg font-bold text-slate-100">—</span></div>
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest block mb-0.5">CPU Core Load</span>
+            <div class="flex items-baseline space-x-1"><span id="stat-cpu" class="font-mono text-base font-bold text-slate-100">—</span><span id="stat-cpu-cores" class="text-[10px] font-mono text-emerald-400"></span></div>
+            <div class="w-full bg-slate-800 h-1 mt-2 rounded overflow-hidden"><div id="stat-cpu-bar" class="bg-cyber-cyan h-full" style="width:0%"></div></div>
+          </div>
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest block mb-0.5">Disk Storage</span>
+            <div class="flex items-baseline space-x-1"><span id="stat-disk" class="font-mono text-base font-bold text-slate-100">—</span><span id="stat-disk-total" class="text-[10px] font-mono text-slate-400"></span></div>
+            <div class="w-full bg-slate-800 h-1 mt-2 rounded overflow-hidden"><div id="stat-disk-bar" class="bg-cyber-amber h-full" style="width:0%"></div></div>
+          </div>
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest block mb-0.5">Network In/Out</span>
+            <div class="flex items-baseline space-x-1"><span id="stat-net" class="font-mono text-base font-bold text-slate-100">—</span><span class="text-[10px] font-mono text-cyber-cyan">MB/s</span></div>
+            <div class="w-full bg-slate-800 h-1 mt-2 rounded overflow-hidden"><div id="stat-net-bar" class="bg-emerald-400 h-full" style="width:0%"></div></div>
+          </div>
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded">
+            <span class="text-[10px] font-mono text-slate-400 uppercase tracking-widest block mb-0.5">Servers</span>
+            <div class="flex items-baseline space-x-1"><span id="stat-servers" class="font-mono text-base font-bold text-slate-100">—</span></div>
+            <div class="w-full bg-slate-800 h-1 mt-2 rounded overflow-hidden"><div id="stat-servers-bar" class="bg-cyber-cyan h-full" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -150,10 +166,27 @@ async function load() {
     }
     const running = servers.filter(s => s.running);
     document.getElementById("stat-servers").textContent = servers.length;
-    document.getElementById("stat-running").textContent = running.length;
-    document.getElementById("stat-players").textContent = servers.reduce((a, s) => a + (s.players_online || 0), 0);
-    document.getElementById("stat-ports").textContent = servers.length;
+    document.getElementById("stat-servers-bar").style.width = Math.min(100, servers.length * 20) + "%";
     document.getElementById("active-badge").textContent = running.length + " ACTIVE";
+    // CPU
+    if (sys.cpu_pct != null) {
+      document.getElementById("stat-cpu").textContent = sys.cpu_pct.toFixed(1) + "%";
+      document.getElementById("stat-cpu-bar").style.width = Math.min(100, sys.cpu_pct) + "%";
+    }
+    if (sys.cpu_cores != null) document.getElementById("stat-cpu-cores").textContent = sys.cpu_cores + " cores";
+    // Disk
+    if (sys.disk_used_gb != null && sys.disk_total_gb) {
+      const pct = sys.disk_used_gb / sys.disk_total_gb * 100;
+      document.getElementById("stat-disk").textContent = sys.disk_used_gb.toFixed(0) + " GB";
+      document.getElementById("stat-disk-total").textContent = "/ " + sys.disk_total_gb.toFixed(0) + " GB";
+      document.getElementById("stat-disk-bar").style.width = Math.min(100, pct) + "%";
+    }
+    // Network
+    if (sys.net_rx_mbps != null) {
+      const total = sys.net_rx_mbps + sys.net_tx_mbps;
+      document.getElementById("stat-net").textContent = total.toFixed(1);
+      document.getElementById("stat-net-bar").style.width = Math.min(100, total * 2) + "%";
+    }
 
     // Topology
     const tcard = document.getElementById("topology-card");

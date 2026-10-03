@@ -42,6 +42,91 @@ pub fn system_ram_mb() -> Option<u64> {
     None
 }
 
+/// CPU usage percent (0-100), from /proc/stat. Takes two samples 100ms apart.
+pub fn system_cpu_pct() -> Option<f64> {
+    fn read_cpu() -> Option<(u64, u64)> {
+        let text = std::fs::read_to_string("/proc/stat").ok()?;
+        let line = text.lines().next()?;
+        let parts: Vec<u64> = line
+            .split_whitespace()
+            .skip(1)
+            .filter_map(|s| s.parse().ok())
+            .collect();
+        if parts.len() < 4 {
+            return None;
+        }
+        let idle = parts[3] + parts.get(4).unwrap_or(&0);
+        let total: u64 = parts.iter().sum();
+        Some((idle, total))
+    }
+    let (idle1, total1) = read_cpu()?;
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    let (idle2, total2) = read_cpu()?;
+    let idle_diff = idle2.saturating_sub(idle1) as f64;
+    let total_diff = total2.saturating_sub(total1) as f64;
+    if total_diff == 0.0 {
+        return None;
+    }
+    Some(((total_diff - idle_diff) / total_diff * 100.0).clamp(0.0, 100.0))
+}
+
+/// Number of CPU cores, from /proc/cpuinfo.
+pub fn cpu_cores() -> Option<u32> {
+    let text = std::fs::read_to_string("/proc/cpuinfo").ok()?;
+    let count = text.lines().filter(|l| l.starts_with("processor")).count();
+    if count > 0 {
+        Some(count as u32)
+    } else {
+        None
+    }
+}
+
+/// Disk usage for the root filesystem (used GB, total GB), via `df`.
+pub fn disk_usage_gb() -> Option<(f64, f64)> {
+    let out = std::process::Command::new("df")
+        .args(["-B1", "/"])
+        .output()
+        .ok()?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    let line = text.lines().nth(1)?;
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    if parts.len() < 4 {
+        return None;
+    }
+    let total: f64 = parts[1].parse::<f64>().ok()? / 1e9;
+    let avail: f64 = parts[3].parse::<f64>().ok()? / 1e9;
+    Some((total - avail, total))
+}
+
+/// Network I/O (rx MB/s, tx MB/s), from /proc/net/dev. Takes two samples.
+pub fn network_mbps() -> Option<(f64, f64)> {
+    fn read_net() -> Option<(u64, u64)> {
+        let text = std::fs::read_to_string("/proc/net/dev").ok()?;
+        let mut rx: u64 = 0;
+        let mut tx: u64 = 0;
+        for line in text.lines().skip(2) {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.len() < 10 {
+                continue;
+            }
+            let iface = parts[0].trim_end_matches(':');
+            // Skip loopback
+            if iface == "lo" {
+                continue;
+            }
+            rx += parts[1].parse::<u64>().unwrap_or(0);
+            tx += parts[9].parse::<u64>().unwrap_or(0);
+        }
+        Some((rx, tx))
+    }
+    let (rx1, tx1) = read_net()?;
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    let (rx2, tx2) = read_net()?;
+    let rx_rate = (rx2.saturating_sub(rx1) as f64) / 0.5 / 1e6;
+    let tx_rate = (tx2.saturating_sub(tx1) as f64) / 0.5 / 1e6;
+    Some((rx_rate, tx_rate))
+}
+
 /// RSS of a process in MB, from /proc/<pid>/status.
 pub fn process_rss_mb(pid: u32) -> Option<u64> {
     let text = std::fs::read_to_string(format!("/proc/{}/status", pid)).ok()?;
