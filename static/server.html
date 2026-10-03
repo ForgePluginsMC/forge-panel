@@ -8,6 +8,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css?v=2">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: { colors: {
+    cyber: { bg:'#060a12', card:'#0a1120', panel:'#0e182b', slot:'#080d18',
+      cyan:'#00f0ff', emerald:'#00e599', amber:'#ff9f1c', rose:'#ff2a5f',
+      purple:'#9d4edd', border:'#162844' }
+  }, fontFamily: {
+    orbitron:['Orbitron','sans-serif'], rajdhani:['Rajdhani','sans-serif'],
+    mono:['JetBrains Mono','monospace']
+  } } }
+};
+</script>
+<style>
+.pixelated-render { image-rendering: pixelated; }
+.hud-border-glow { box-shadow: 0 0 0 1px rgba(0,240,255,.25), 0 0 25px rgba(0,240,255,.12); }
+.clip-hud-corner { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
+</style>
 </head>
 <body>
 <header class="top">
@@ -531,16 +549,14 @@ function invSlot(it, ghost, slot, isEnder) {
   if (it) {
     const iconName = it.id.replace(/^minecraft:/, "");
     const icon = `/static/items/${encodeURIComponent(iconName)}`;
-    inner = `<img class="inv-icon" src="${icon}" alt="" loading="lazy" onerror="this.style.display='none'">` +
-      `<span class="inv-item">${esc(prettyItem(it.id))}</span>` +
-      (it.count > 1 ? `<span class="inv-count">${it.count}</span>` : "");
-  } else if (ghost) {
-    inner = `<img class="slot-ghost" src="${ghost}" alt="" draggable="false">`;
+    inner = `<img class="w-7 h-7 sm:w-8 sm:h-8 pixelated-render" src="${icon}" alt="" loading="lazy" onerror="this.style.display='none'">` +
+      (it.count > 1 ? `<span class="absolute bottom-0.5 right-1 text-[9px] font-mono font-bold text-cyber-cyan">${it.count}</span>` : "");
   }
   const slotAttr = slot !== undefined ? ` data-slot="${slot}"` : "";
   const enderAttr = isEnder ? ` data-ender="1"` : "";
   const itemAttr = it ? ` data-item-id="${esc(it.id)}"` : "";
-  return `<div class="inv-slot${it ? " filled" : ""}"${slotAttr}${enderAttr}${itemAttr} title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
+  const filled = it ? "border-cyber-amber border-2 bg-cyber-panel" : "border-cyber-border bg-cyber-slot";
+  return `<div class="aspect-square ${filled} border rounded flex items-center justify-center relative hover:border-cyber-cyan/60 hover:scale-105 transition-all cursor-pointer"${slotAttr}${enderAttr}${itemAttr} title="${it ? esc(prettyItem(it.id)) + " x" + it.count : ""}">${inner}</div>`;
 }
 
 // Vanilla armor slot ghost icons (pixel art extracted from the client).
@@ -551,84 +567,169 @@ const GM_NAMES = { 0: "Survival", 1: "Creative", 2: "Adventure", 3: "Spectator" 
 
 function playerModalHTML(info) {
   const n = info.name, e = encodeURIComponent(n);
-  const bySlotInv = invSlotMap(info.inventory);
-  const stat = (label, val) =>
-    `<div class="pstat"><div class="rack-label">${label}</div><div class="seg-sm">${val}</div></div>`;
   const hp = info.health != null ? Math.max(0, Math.round(info.health)) : "—";
-  const pos = info.pos ? info.pos.map(v => Math.round(v * 10) / 10).join(", ") : "—";
-  // inventory slot layout: armor/offhand via invSlot, main 9-35, hotbar 0-8
+  const food = info.food != null ? Math.round(info.food) : "—";
+  const xpLevel = info.xp_level != null ? info.xp_level : "—";
+  const xpTotal = info.xp_total != null ? info.xp_total : 0;
+  const gm = info.gamemode != null ? (GM_NAMES[info.gamemode] || info.gamemode) : "—";
+  const dim = info.dimension ? info.dimension.replace(/^minecraft:/, "") : "—";
+  const pos = info.pos ? info.pos.map(v => Math.round(v * 10) / 10) : null;
+  const posStr = pos ? pos.join(", ") : "—";
+  const uuid = info.uuid || "uuid unknown";
+  // Inventory slots for the grid
+  const bySlotInv = invSlotMap(info.inventory);
   const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  const invSlots = (slots) => slots.map(s => {
+    const it = bySlotInv.get(s);
+    return invSlot(it, null, s);
+  }).join("");
+
   return `
-  <div class="phead-row">
-    <img class="phead-lg" alt="" src="https://minotar.net/helm/${e}/64.png" onerror="this.style.display='none'">
-    <div>
-      <h3 style="margin:0">${esc(n)}</h3>
-      <div class="small muted">${info.uuid ? esc(info.uuid) : "uuid unknown"}</div>
-    </div>
-    <img class="pskin" alt="" src="https://minotar.net/body/${e}/100.png" onerror="this.style.display='none'">
-  </div>
-  <div class="pstats">
-    ${stat("Health", hp + (info.health != null ? " / 20" : ""))}
-    ${stat("Food", info.food != null ? info.food + " / 20" : "—")}
-    ${stat("XP level", info.xp_level != null ? info.xp_level + (info.xp_total != null ? ` <span class="muted small">(${info.xp_total} xp)</span>` : "") : "—")}
-    ${stat("Gamemode", info.gamemode != null ? (GM_NAMES[info.gamemode] || info.gamemode) : "—")}
-    ${stat("Dimension", info.dimension ? esc(info.dimension.replace(/^minecraft:/, "")) : "—")}
-    ${stat("Position", esc(pos))}
-  </div>
-  <h4>Actions</h4>
-  <div class="pactions compact">
-    <button class="arcade green" data-act="heal">HEAL</button>
-    <button class="arcade green" data-act="feed">FEED</button>
-    <button class="arcade amber" data-act="freeze">FREEZE</button>
-    <button class="arcade amber" data-act="unfreeze">UNFREEZE</button>
-    <button class="arcade red" data-act="kill">KILL</button>
-    <button class="arcade red" data-act="kick">KICK</button>
-    <button class="arcade red" data-act="ban">BAN</button>
-    <button class="arcade amber" data-act="op">OP</button>
-    <button class="arcade amber" data-act="deop">DEOP</button>
-    <button class="arcade" data-act="mute" disabled title="vanilla/Paper has no mute command — needs a chat plugin">MUTE</button>
-    <span class="psep"></span>
-    <select id="p-gamemode" class="mini">
-      <option value="survival">Survival</option><option value="creative">Creative</option>
-      <option value="adventure">Adventure</option><option value="spectator">Spectator</option>
-    </select>
-    <button class="btn mini" data-act="gamemode">Set</button>
-    <span class="psep"></span>
-    <input id="p-give-item" class="mini" placeholder="minecraft:diamond" size="14">
-    <input id="p-give-count" class="mini" placeholder="1" size="3">
-    <button class="btn mini" data-act="give">Give</button>
-    <span class="psep"></span>
-    <input id="p-tp-x" class="mini" placeholder="x" size="5"><input id="p-tp-y" class="mini" placeholder="y" size="5"><input id="p-tp-z" class="mini" placeholder="z" size="5">
-    <button class="btn mini" data-act="tp">TP</button>
-  </div>
-  <p class="small muted" id="paction-out"></p>
-  <div class="inv-toggle">
-    <button class="btn mini inv-tab${invView === 'inventory' ? ' active' : ''}" data-invtab="inventory">Inventory</button>
-    <button class="btn mini inv-tab${invView === 'ender' ? ' active' : ''}" data-invtab="ender">Ender Chest</button>
-  </div>
-  <div id="inv-view-inventory" style="display:${invView === 'inventory' ? 'block' : 'none'}">
-  <div class="mc-inv">
-    <div class="mc-main">
-      <div class="mc-armor-col">
-        ${invSlot(bySlotInv.get(103), null, 103)}
-        ${invSlot(bySlotInv.get(102), null, 102)}
-        ${invSlot(bySlotInv.get(101), null, 101)}
-        ${invSlot(bySlotInv.get(100), null, 100)}
+  <div class="font-rajdhani">
+  <!-- Header -->
+  <header class="flex flex-wrap items-center justify-between gap-4 border-b border-cyber-border pb-5 mb-6">
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        <div class="w-16 h-16 rounded-lg bg-cyber-panel border-2 border-cyber-cyan overflow-hidden flex items-center justify-center">
+          <img class="w-14 h-14 pixelated-render" alt="" src="https://minotar.net/helm/${e}/64.png" onerror="this.style.display='none'">
+        </div>
+        <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-emerald opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyber-emerald border-2 border-cyber-card"></span>
+        </span>
       </div>
-      <div class="mc-grids">
-        ${invGrid(info.inventory, range(9, 35), 9)}
-        <div style="height:6px"></div>
-        ${invGrid(info.inventory, range(0, 8), 9)}
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-orbitron font-bold tracking-wider text-white">${esc(n)}</h1>
+          <span class="px-2.5 py-0.5 text-xs font-mono font-bold uppercase bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/40 rounded">${esc(gm)} OP</span>
+        </div>
+        <div class="flex items-center gap-3 mt-1.5 text-xs font-mono text-slate-400">
+          <button class="hover:text-cyber-cyan flex items-center gap-1.5 bg-cyber-slot px-2 py-0.5 rounded border border-cyber-border" onclick="navigator.clipboard.writeText('${esc(uuid)}')" title="Click to copy">
+            <span>UUID: ${esc(uuid)}</span>
+          </button>
+          <span class="text-cyber-emerald">● Online</span>
+        </div>
       </div>
     </div>
-    <div class="mc-sub">
-      ${invSlot(bySlotInv.get(-106), null, -106)}
-      <button class="inv-slot inv-delete" data-act="clear" title="Delete entire inventory">✕</button>
+    <div class="flex items-center gap-3">
+      <div class="hidden md:flex flex-col text-right font-mono text-xs text-slate-400 mr-2 border-r border-cyber-border pr-4">
+        <span class="text-cyber-cyan">FORGE-PANEL</span>
+        <span>Player Inspector</span>
+      </div>
+      <button class="w-10 h-10 rounded bg-cyber-panel border border-cyber-rose/50 hover:bg-cyber-rose text-cyber-rose hover:text-white transition-all flex items-center justify-center" onclick="closePlayerModal()" title="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-width="2"/></svg>
+      </button>
     </div>
-  </div>
-  </div>
-  <div id="inv-view-ender" style="display:${invView === 'ender' ? 'block' : 'none'}">
-  ${invGrid(info.ender, range(0, 26), 9, true)}
+  </header>
+
+  <!-- Stats Grid -->
+  <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <div class="bg-cyber-panel/80 border border-cyber-border p-3 rounded-lg">
+      <div class="text-[11px] font-mono text-slate-400 uppercase flex justify-between"><span>Health</span><span class="text-cyber-rose">♥</span></div>
+      <div class="text-xl font-orbitron font-bold text-cyber-cyan mt-1">${hp} <span class="text-xs text-slate-400 font-mono">/ 20</span></div>
+      <div class="w-full bg-cyber-slot h-1.5 rounded-full mt-2 overflow-hidden"><div class="bg-gradient-to-r from-cyber-rose to-cyber-cyan h-full" style="width:${hp !== "—" ? (hp/20*100) : 0}%"></div></div>
+    </div>
+    <div class="bg-cyber-panel/80 border border-cyber-border p-3 rounded-lg">
+      <div class="text-[11px] font-mono text-slate-400 uppercase flex justify-between"><span>Hunger</span><span>🍖</span></div>
+      <div class="text-xl font-orbitron font-bold text-cyber-cyan mt-1">${food} <span class="text-xs text-slate-400 font-mono">/ 20</span></div>
+      <div class="w-full bg-cyber-slot h-1.5 rounded-full mt-2 overflow-hidden"><div class="bg-cyber-amber h-full" style="width:${food !== "—" ? (food/20*100) : 0}%"></div></div>
+    </div>
+    <div class="bg-cyber-panel/80 border border-cyber-border p-3 rounded-lg">
+      <div class="text-[11px] font-mono text-slate-400 uppercase flex justify-between"><span>XP Level</span><span class="text-cyber-emerald">EXP</span></div>
+      <div class="text-xl font-orbitron font-bold text-cyber-cyan mt-1">${xpLevel} <span class="text-xs text-slate-400 font-mono">(${xpTotal} XP)</span></div>
+    </div>
+    <div class="bg-cyber-panel/80 border border-cyber-border p-3 rounded-lg">
+      <div class="text-[11px] font-mono text-slate-400 uppercase">Gamemode</div>
+      <div class="text-xl font-orbitron font-bold text-cyber-cyan mt-1">${esc(gm)}</div>
+    </div>
+    <div class="bg-cyber-panel/80 border border-cyber-border p-3 rounded-lg">
+      <div class="text-[11px] font-mono text-slate-400 uppercase">Dimension</div>
+      <div class="text-xl font-orbitron font-bold text-cyber-cyan mt-1 capitalize">${esc(dim)}</div>
+    </div>
+    <div class="bg-cyber-panel/80 border border-cyber-border p-3 rounded-lg">
+      <div class="text-[11px] font-mono text-slate-400 uppercase flex justify-between"><span>Position</span><span class="text-cyber-cyan text-[10px]">XYZ</span></div>
+      <div class="text-sm font-orbitron font-bold text-cyber-cyan mt-1 truncate" title="${esc(posStr)}">${esc(posStr)}</div>
+    </div>
+  </section>
+
+  <!-- Actions -->
+  <section class="mb-6 bg-cyber-panel/50 border border-cyber-border p-4 rounded-xl">
+    <h2 class="text-xs font-mono font-bold tracking-widest text-slate-300 uppercase mb-3">⚡ Quick Actions</h2>
+    <div class="flex flex-wrap gap-2 mb-4">
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-cyber-emerald/15 hover:bg-cyber-emerald hover:text-black text-cyber-emerald border border-cyber-emerald/50 rounded transition-all" data-act="heal">✚ Heal</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-cyber-emerald/15 hover:bg-cyber-emerald hover:text-black text-cyber-emerald border border-cyber-emerald/50 rounded transition-all" data-act="feed">🍖 Feed</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-cyber-amber/15 hover:bg-cyber-amber hover:text-black text-cyber-amber border border-cyber-amber/50 rounded transition-all" data-act="freeze">❄ Freeze</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-cyber-amber/15 hover:bg-cyber-amber hover:text-black text-cyber-amber border border-cyber-amber/50 rounded transition-all" data-act="unfreeze">☀ Unfreeze</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-slate-700/40 hover:bg-slate-700 text-slate-300 border border-slate-600 rounded transition-all" data-act="mute" disabled title="Needs a chat plugin">🔇 Mute</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-cyber-rose/15 hover:bg-cyber-rose hover:text-white text-cyber-rose border border-cyber-rose/50 rounded transition-all" data-act="kill">⚡ Kill</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-cyber-rose/15 hover:bg-cyber-rose hover:text-white text-cyber-rose border border-cyber-rose/50 rounded transition-all" data-act="kick">👢 Kick</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white border border-red-500 rounded transition-all" data-act="ban">⛔ Ban</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-cyber-cyan/15 hover:bg-cyber-cyan hover:text-black text-cyber-cyan border border-cyber-cyan/50 rounded transition-all" data-act="op">OP</button>
+      <button class="px-3 py-1.5 text-xs font-orbitron font-bold uppercase bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded transition-all" data-act="deop">DEOP</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3 border-t border-cyber-border/70 text-xs font-mono">
+      <div class="md:col-span-3 flex items-center bg-cyber-slot border border-cyber-border rounded px-2">
+        <span class="text-slate-500 mr-2">GM:</span>
+        <select id="p-gamemode" class="w-full bg-transparent border-0 text-cyber-cyan py-1 focus:ring-0 cursor-pointer">
+          <option class="bg-cyber-panel" value="survival">Survival</option>
+          <option class="bg-cyber-panel" value="creative">Creative</option>
+          <option class="bg-cyber-panel" value="adventure">Adventure</option>
+          <option class="bg-cyber-panel" value="spectator">Spectator</option>
+        </select>
+        <button class="ml-1 bg-cyber-cyan/20 hover:bg-cyber-cyan hover:text-black text-cyber-cyan text-[10px] uppercase font-bold px-2 py-1 rounded" data-act="gamemode">Set</button>
+      </div>
+      <div class="md:col-span-5 flex items-center bg-cyber-slot border border-cyber-border rounded px-2">
+        <span class="text-slate-500 mr-2">GIVE:</span>
+        <input id="p-give-item" class="w-full bg-transparent border-0 text-white py-1 focus:ring-0 placeholder-slate-600" placeholder="minecraft:diamond" value="minecraft:diamond">
+        <input id="p-give-count" class="w-14 bg-cyber-panel border border-cyber-border text-center text-white py-0.5 rounded ml-1" type="number" value="1" min="1" max="64">
+        <button class="ml-2 bg-cyber-cyan/20 hover:bg-cyber-cyan hover:text-black text-cyber-cyan text-[10px] uppercase font-bold px-2.5 py-1 rounded whitespace-nowrap" data-act="give">Give</button>
+      </div>
+      <div class="md:col-span-4 flex items-center bg-cyber-slot border border-cyber-border rounded px-2">
+        <span class="text-slate-500 mr-2">TP:</span>
+        <input id="p-tp-x" class="w-1/3 bg-transparent border-0 text-white py-1 text-center focus:ring-0" placeholder="X" value="${pos ? pos[0] : ""}">
+        <span class="text-slate-600">:</span>
+        <input id="p-tp-y" class="w-1/3 bg-transparent border-0 text-white py-1 text-center focus:ring-0" placeholder="Y" value="${pos ? pos[1] : ""}">
+        <span class="text-slate-600">:</span>
+        <input id="p-tp-z" class="w-1/3 bg-transparent border-0 text-white py-1 text-center focus:ring-0" placeholder="Z" value="${pos ? pos[2] : ""}">
+        <button class="ml-2 bg-cyber-cyan/20 hover:bg-cyber-cyan hover:text-black text-cyber-cyan text-[10px] uppercase font-bold px-2.5 py-1 rounded" data-act="tp">TP</button>
+      </div>
+    </div>
+    <p class="text-xs text-slate-500 mt-2" id="paction-out"></p>
+  </section>
+
+  <!-- Inventory -->
+  <section class="bg-cyber-panel/60 border border-cyber-border rounded-xl p-4">
+    <div class="flex flex-wrap items-center justify-between border-b border-cyber-border pb-3 mb-4 gap-3">
+      <nav class="flex items-center gap-2">
+        <button class="px-4 py-2 font-orbitron text-xs font-bold uppercase border-b-2 ${invView === 'inventory' ? 'border-cyber-amber text-cyber-amber bg-cyber-amber/10' : 'border-transparent text-slate-400 hover:text-cyber-cyan'} rounded-t" data-invtab="inventory">📦 Inventory (36)</button>
+        <button class="px-4 py-2 font-orbitron text-xs font-bold uppercase border-b-2 ${invView === 'ender' ? 'border-cyber-amber text-cyber-amber bg-cyber-amber/10' : 'border-transparent text-slate-400 hover:text-cyber-cyan'} rounded-t" data-invtab="ender">🗝️ Ender Chest</button>
+      </nav>
+      <div class="flex items-center gap-2">
+        <button class="px-2.5 py-1 text-[11px] font-mono bg-cyber-rose/20 hover:bg-cyber-rose text-cyber-rose hover:text-white border border-cyber-rose/40 rounded" data-act="clear">🗑 Clear</button>
+      </div>
+    </div>
+    <div id="inv-view-inventory" style="display:${invView === 'inventory' ? 'block' : 'none'}">
+      <span class="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-1.5 block">Main Storage (27 Slots)</span>
+      <div class="grid grid-cols-9 gap-1.5 mb-4">${invSlots(range(9, 35))}</div>
+      <div class="pt-2 border-t border-cyber-border/80">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-cyber-cyan mb-1.5 block">Hotbar (Slots 0 - 8)</span>
+        <div class="grid grid-cols-9 gap-1.5">${invSlots(range(0, 8))}</div>
+      </div>
+      <div class="mt-4 pt-2 border-t border-cyber-border/80">
+        <span class="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-1.5 block">Armor & Offhand</span>
+        <div class="flex gap-1.5">
+          ${invSlot(bySlotInv.get(103), null, 103)}
+          ${invSlot(bySlotInv.get(102), null, 102)}
+          ${invSlot(bySlotInv.get(101), null, 101)}
+          ${invSlot(bySlotInv.get(100), null, 100)}
+          ${invSlot(bySlotInv.get(-106), null, -106)}
+        </div>
+      </div>
+    </div>
+    <div id="inv-view-ender" style="display:${invView === 'ender' ? 'block' : 'none'}">
+      <div class="grid grid-cols-9 gap-1.5">${invGrid(info.ender, range(0, 26), 9, true)}</div>
+    </div>
+  </section>
   </div>`;
 }
 
