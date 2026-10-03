@@ -30,6 +30,48 @@ pub struct ModrinthHit {
     pub project_type: String,
     #[serde(default)]
     pub all_project_types: Vec<String>,
+    #[serde(default)]
+    pub versions: Vec<String>,
+}
+
+/// Detect the Minecraft version from a server JAR by reading version.json.
+/// Returns e.g. "26.3", or None if not found.
+pub fn detect_mc_version_from_jar(jar_path: &std::path::Path) -> Option<String> {
+    let file = std::fs::File::open(jar_path).ok()?;
+    let mut archive = zip::ZipArchive::new(file).ok()?;
+    let mut version_file = archive.by_name("version.json").ok()?;
+    let mut contents = String::new();
+    use std::io::Read;
+    version_file.read_to_string(&mut contents).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
+    json.get("id")?.as_str().map(|s| s.to_string())
+}
+
+/// Parse "26.3" or "1.21.1" into (major, minor).
+fn parse_version_pair(v: &str) -> Option<(u64, u64)> {
+    let parts: Vec<&str> = v.split('.').collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let major = parts[0].parse::<u64>().ok()?;
+    let minor = parts[1].parse::<u64>().ok()?;
+    Some((major, minor))
+}
+
+/// Lenient compatibility check: same major, minor within 2.
+/// Many plugins work across nearby versions, so we don't require exact match.
+pub fn is_version_compatible(server_version: &str, plugin_versions: &[String]) -> bool {
+    let (s_major, s_minor) = match parse_version_pair(server_version) {
+        Some(p) => p,
+        None => return true, // If we can't parse, don't hide
+    };
+    plugin_versions.iter().any(|pv| {
+        if let Some((p_major, p_minor)) = parse_version_pair(pv) {
+            p_major == s_major && p_minor.abs_diff(s_minor) <= 2
+        } else {
+            false
+        }
+    })
 }
 
 #[derive(Debug, Deserialize)]

@@ -680,7 +680,6 @@ async fn run_install(state: Arc<AppState>, job_id: &str, req: InstallRequest) ->
             config::ServerRole::Server
         },
         behind_proxy: None,
-        mc_version: None,
         remote_host: None,
     };
     config::append_server(&state.config_path, &entry)?;
@@ -948,7 +947,6 @@ pub async fn import_server(state: Arc<AppState>, req: ImportRequest) -> Result<(
         xmx_mb: None,
         role: config::ServerRole::default(),
         behind_proxy: None,
-        mc_version: None,
         remote_host: None,
     };
     config::append_server(&state.config_path, &entry)?;

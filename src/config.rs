@@ -63,10 +63,6 @@ pub struct ServerConfig {
     /// Name of the proxy this server sits behind (must reference a proxy entry).
     #[serde(default)]
     pub behind_proxy: Option<String>,
-    /// Minecraft version of the server (e.g. "26.2"), used to filter plugin
-    /// versions in the plugin browser. Optional; set from the UI.
-    #[serde(default)]
-    pub mc_version: Option<String>,
     /// If set, this entry is a REMOTE server: it runs on another machine and
     /// the panel only talks to it over RCON (host = this value). The panel
     /// never starts/stops it, binds no local ports for it, and offers no
@@ -261,9 +257,6 @@ pub fn append_server(path: &Path, server: &ServerConfig) -> Result<()> {
     if let Some(bp) = &server.behind_proxy {
         block.push_str(&format!("behind_proxy = {:?}\n", bp));
     }
-    if let Some(mcv) = &server.mc_version {
-        block.push_str(&format!("mc_version = {:?}\n", mcv));
-    }
     if let Some(rh) = &server.remote_host {
         block.push_str(&format!("remote_host = {:?}\n", rh));
     }
@@ -296,7 +289,6 @@ mod tests {
             xmx_mb: None,
             role: ServerRole::Server,
             behind_proxy: None,
-            mc_version: None,
             remote_host: None,
         }
     }

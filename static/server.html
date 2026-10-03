@@ -136,8 +136,6 @@
           <div class="f-val" id="set-xmx-val">2048</div>
         </div>
       </div>
-      <label>MC version (for plugin version filtering, e.g. 26.2)</label>
-      <input id="set-mc" placeholder="26.2">
       <label>Behind proxy (name of a proxy server, empty = none)</label>
       <input id="set-proxy" placeholder="">
       <div style="margin-top:12px"><button class="arcade amber" id="settings-save" style="padding:10px 22px">SAVE</button>
@@ -259,7 +257,7 @@ async function refreshHeader() {
   if (s.geyser && s.geyser.installed) badges += `<span class="badge geyser">geyser${s.geyser.bedrock_port ? " :" + s.geyser.bedrock_port : ""}</span>`;
   document.getElementById("srv-badges").innerHTML = badges;
   document.getElementById("srv-meta").textContent =
-    `:${s.port}` + (s.mc_version ? ` · MC ${s.mc_version}` : "") +
+    `:${s.port}` +
     (s.behind_proxy ? ` · → ${s.behind_proxy}` : "") +
     (s.remote ? ` · remote @ ${s.host || "?"}` : "");
   document.getElementById("srv-actions").innerHTML = s.remote
@@ -280,7 +278,6 @@ async function refreshHeader() {
   // settings form
   if (s.xms_mb) { document.getElementById("set-xms").value = s.xms_mb; document.getElementById("set-xms-val").textContent = s.xms_mb; }
   if (s.xmx_mb) { document.getElementById("set-xmx").value = s.xmx_mb; document.getElementById("set-xmx-val").textContent = s.xmx_mb; }
-  document.getElementById("set-mc").value = s.mc_version || "";
   document.getElementById("set-proxy").value = s.behind_proxy || "";
   refreshRack();
   // First load only: local servers get the live log stream; remote ones get
@@ -1200,7 +1197,7 @@ async function pluginDetail(key) {
     }
     el.innerHTML = `<h3 style="margin-top:0">${esc(title)}</h3>
       <p class="muted">${esc(desc || "")}</p>
-      <label>Version${serverInfo && serverInfo.mc_version ? " (filtered to MC " + esc(serverInfo.mc_version) + ")" : ""}</label>
+      <label>Version (filtered to your server's MC version)</label>
       <select id="pv-select">${versions.map(v => `<option value="${esc(v.id)}">${verLabel(v)}</option>`).join("")}</select>
       <div style="margin-top:14px"><button class="arcade amber" id="pv-install" style="padding:10px 20px">INSTALL</button>
       <span class="small muted" id="pv-msg"></span></div>`;
@@ -1226,7 +1223,6 @@ document.getElementById("settings-save").onclick = async () => {
     await api("POST", `/api/servers/${enc}/settings`, {
       xms_mb: parseInt(document.getElementById("set-xms").value, 10),
       xmx_mb: parseInt(document.getElementById("set-xmx").value, 10),
-      mc_version: document.getElementById("set-mc").value.trim() || null,
       behind_proxy: document.getElementById("set-proxy").value.trim() || null,
     });
     msg.textContent = "saved";

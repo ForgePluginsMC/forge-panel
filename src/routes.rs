@@ -213,7 +213,6 @@ struct ServerInfo {
     memory_mb: Option<u64>,
     role: String,
     behind_proxy: Option<String>,
-    mc_version: Option<String>,
     geyser: geyser::GeyserStatus,
     /// True for remote entries (RCON-only, managed on another machine).
     remote: bool,
@@ -328,7 +327,6 @@ async fn list_servers(State(state): State<Arc<AppState>>) -> Json<Vec<ServerInfo
                 ServerRole::Server => "server".to_string(),
             },
             behind_proxy: cfg.behind_proxy.clone(),
-            mc_version: cfg.mc_version.clone(),
             geyser: if remote || cfg.role == ServerRole::Proxy {
                 geyser::GeyserStatus {
                     installed: false,
@@ -474,12 +472,11 @@ async fn restart_server(
 struct SettingsBody {
     xms_mb: Option<u32>,
     xmx_mb: Option<u32>,
-    mc_version: Option<String>,
     /// Proxy name to link behind, or empty string to unlink.
     behind_proxy: Option<String>,
 }
 
-/// Edit per-server settings (RAM, MC version, proxy link). Rewrites the
+/// Edit per-server settings (RAM, proxy link). Rewrites the
 /// config file; TOML comments are not preserved.
 async fn update_settings(
     State(state): State<Arc<AppState>>,
@@ -496,16 +493,6 @@ async fn update_settings(
             return Err(err(StatusCode::BAD_REQUEST, "RAM must be 1..1000000 MB"));
         }
     }
-    if let Some(mc) = &body.mc_version {
-        if !mc.is_empty()
-            && (mc.len() > 32
-                || !mc
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_'))
-        {
-            return Err(err(StatusCode::BAD_REQUEST, "bad MC version"));
-        }
-    }
     let mut cfg = state.config.read().unwrap().clone();
     let entry = cfg
         .find_mut(&name)
@@ -513,7 +500,6 @@ async fn update_settings(
     reject_remote(entry)?;
     entry.xms_mb = body.xms_mb;
     entry.xmx_mb = body.xmx_mb;
-    entry.mc_version = body.mc_version.filter(|s| !s.is_empty());
     entry.behind_proxy = body.behind_proxy.filter(|s| !s.is_empty());
     config::write_config(&state.config_path, &cfg)
         .map_err(|e| err(StatusCode::BAD_REQUEST, format!("{:#}", e)))?;
@@ -1170,7 +1156,6 @@ async fn add_remote_server(
         xmx_mb: None,
         role: ServerRole::Server,
         behind_proxy: None,
-        mc_version: None,
         remote_host: Some(host.to_string()),
     };
     // append_server validates the merged config (25565 ban, rcon required).
@@ -1366,7 +1351,7 @@ async fn plugins_modrinth_search(
     Path(name): Path<String>,
     Query(q): Query<PluginSearchQuery>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    server_or_404(&state, &name)?;
+    let cfg = server_or_404(&state, &name)?;
     let sort = q.sort.as_deref().unwrap_or("relevance");
     let project_type = q.project_type.as_deref().unwrap_or("plugin");
     let (hits, total) = plugins::modrinth_search(
@@ -1378,6 +1363,16 @@ async fn plugins_modrinth_search(
     )
     .await
     .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
+    // Filter by MC version compatibility (detected from JAR, lenient).
+    let jar_path = cfg.dir.join(&cfg.jar);
+    let mc_version = plugins::detect_mc_version_from_jar(&jar_path);
+    let hits: Vec<_> = match mc_version {
+        Some(v) => hits
+            .into_iter()
+            .filter(|h| plugins::is_version_compatible(&v, &h.versions))
+            .collect(),
+        None => hits, // If we can't detect, show all
+    };
     Ok(Json(serde_json::json!({ "hits": hits, "total": total })))
 }
 
@@ -1421,11 +1416,21 @@ async fn plugins_modrinth_trending(
     Path(name): Path<String>,
     Query(q): Query<PluginSearchQuery>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    server_or_404(&state, &name)?;
+    let cfg = server_or_404(&state, &name)?;
     let project_type = q.project_type.as_deref().unwrap_or("plugin");
     let (hits, total) = plugins::modrinth_search(&state, "", "downloads", None, project_type)
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
+    // Filter by MC version compatibility (detected from JAR, lenient).
+    let jar_path = cfg.dir.join(&cfg.jar);
+    let mc_version = plugins::detect_mc_version_from_jar(&jar_path);
+    let hits: Vec<_> = match mc_version {
+        Some(v) => hits
+            .into_iter()
+            .filter(|h| plugins::is_version_compatible(&v, &h.versions))
+            .collect(),
+        None => hits,
+    };
     Ok(Json(serde_json::json!({ "hits": hits, "total": total })))
 }
 
@@ -1446,7 +1451,10 @@ async fn plugins_modrinth_versions(
 ) -> ApiResult<Json<serde_json::Value>> {
     let cfg = server_or_404(&state, &name)?;
     let loaders = ["paper", "spigot", "purpur", "bukkit"];
-    let games: Vec<&str> = cfg.mc_version.as_deref().map(|v| vec![v]).unwrap_or_default();
+    // Detect MC version from JAR for filtering.
+    let jar_path = cfg.dir.join(&cfg.jar);
+    let mc_version = plugins::detect_mc_version_from_jar(&jar_path);
+    let games: Vec<&str> = mc_version.as_deref().map(|v| vec![v]).unwrap_or_default();
     let versions = plugins::modrinth_versions(&state, &id, &loaders, &games)
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
@@ -1520,7 +1528,9 @@ async fn plugins_install(
     }
     let source = PluginSource::from_str(&body.source)
         .ok_or_else(|| err(StatusCode::BAD_REQUEST, "unknown source"))?;
-    let mc_version = cfg.mc_version.clone();
+    // Detect MC version from JAR for version filtering.
+    let jar_path = cfg.dir.join(&cfg.jar);
+    let mc_version = plugins::detect_mc_version_from_jar(&jar_path);
     let message = plugins::install_plugin(
         &state,
         &cfg,
