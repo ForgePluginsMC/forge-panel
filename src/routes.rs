@@ -1458,6 +1458,15 @@ async fn plugins_modrinth_versions(
     let versions = plugins::modrinth_versions(&state, &id, &loaders, &games)
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
+    // Filter versions by compatibility (Modrinth's API filter is unreliable).
+    // Be lenient: same major, minor within 2.
+    let versions: Vec<_> = match &mc_version {
+        Some(v) => versions
+            .into_iter()
+            .filter(|ver| plugins::is_version_compatible(v, &ver.game_versions))
+            .collect(),
+        None => versions,
+    };
     Ok(Json(serde_json::json!({ "versions": versions })))
 }
 
