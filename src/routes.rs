@@ -218,6 +218,12 @@ struct ServerInfo {
     remote: bool,
     /// Remote host, when `remote` is true.
     host: Option<String>,
+    /// Server type (e.g. "Paper", "Purpur") detected from jar.
+    server_type: Option<String>,
+    /// Minecraft version (e.g. "1.20.4") detected from jar.
+    mc_version: Option<String>,
+    /// Current TPS from cache.
+    tps: Option<f64>,
 }
 
 /// RCON/query target: the remote host for remote servers, localhost for
@@ -308,6 +314,23 @@ async fn list_servers(State(state): State<Arc<AppState>>) -> Json<Vec<ServerInfo
         } else {
             (None, None)
         };
+        // Detect server type and MC version from jar (local servers only)
+        let (server_type, mc_version) = if remote {
+            (None, None)
+        } else {
+            let jar_path = cfg.dir.join(&cfg.jar);
+            (
+                plugins::detect_server_type_from_jar(&jar_path),
+                plugins::detect_mc_version_from_jar(&jar_path),
+            )
+        };
+        // Get cached TPS
+        let tps = state
+            .tps_cache
+            .read()
+            .unwrap()
+            .get(&cfg.name)
+            .and_then(|(_, val)| *val);
         out.push(ServerInfo {
             name: cfg.name.clone(),
             port: cfg.port,
@@ -338,6 +361,9 @@ async fn list_servers(State(state): State<Arc<AppState>>) -> Json<Vec<ServerInfo
             },
             remote,
             host: cfg.remote_host.clone(),
+            server_type,
+            mc_version,
+            tps,
         });
     }
     Json(out)
