@@ -288,6 +288,11 @@ async function refreshHeader() {
     const btn = document.querySelector(`#tabs button[data-tab="${t}"]`);
     if (btn) btn.style.display = s.remote ? "none" : "";
   }
+  // Plugins only work on Bukkit-family servers (paper/spigot/purpur/bukkit).
+  // Hide the tab for vanilla, fabric, forge, etc.
+  const isBukkit = s.server_type && ["paper", "spigot", "purpur", "bukkit"].includes(s.server_type.toLowerCase());
+  const pluginsBtn = document.querySelector(`#tabs button[data-tab="plugins"]`);
+  if (pluginsBtn && !s.remote) pluginsBtn.style.display = isBukkit ? "" : "none";
   document.getElementById("cmd-input").placeholder = s.remote ? "rcon command…" : "console command…";
   const go = async (a) => { try { await api("POST", `/api/servers/${enc}/${a}`); refreshHeader(); refreshRack(); } catch (e) { document.getElementById("err").textContent = e.message; } };
   const rs = document.getElementById("a-restart"); if (rs) rs.onclick = () => go("restart");
