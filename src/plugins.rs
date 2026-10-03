@@ -105,6 +105,8 @@ pub struct ModrinthVersion {
     pub loaders: Vec<String>,
     #[serde(default)]
     pub files: Vec<ModrinthFile>,
+    #[serde(default)]
+    pub date_published: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1452,9 +1452,11 @@ async fn plugins_modrinth_versions(
     let _cfg = server_or_404(&state, &name)?;
     // Fetch all versions; frontend shows MC versions and loaders in the label.
     // The search list already filters incompatible plugins.
-    let versions = plugins::modrinth_versions(&state, &id, &[], &[])
+    let mut versions = plugins::modrinth_versions(&state, &id, &[], &[])
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
+    // Sort newest first by date_published.
+    versions.sort_by(|a, b| b.date_published.cmp(&a.date_published));
     Ok(Json(serde_json::json!({ "versions": versions })))
 }
 
