@@ -94,12 +94,6 @@
     </div>
     <div class="card screws">
       <h3>Plugin browser</h3>
-      <div class="tabs" style="margin-bottom:8px">
-        <button data-psrc="plugin" class="active">Plugins</button>
-        <button data-psrc="mod">Mods</button>
-        <button data-psrc="modpack">Modpacks</button>
-        <button data-psrc="spiget">Spiget</button>
-      </div>
       <div class="form-row">
         <input id="plugin-q" placeholder="search plugins…">
         <button class="btn" id="plugin-search">Search</button>
@@ -216,30 +210,18 @@ async function loadPluginCats() {
   const row = document.getElementById("plugin-cats");
   row.innerHTML = "";
   try {
-    if (psrc === "spiget") {
-      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/categories`);
-      row.innerHTML = r.categories.map(c =>
-        `<button class="cat-item" data-catid="${c.id}">${esc(c.name)}</button>`).join("");
-      row.querySelectorAll(".cat-item").forEach(b => b.onclick = () => {
-        row.querySelectorAll(".cat-item").forEach(x => x.classList.remove("active"));
-        b.classList.add("active");
-        browsePluginCategory("spiget", b.dataset.catid);
-      });
-    } else {
-      // Modrinth: plugin, mod, or modpack — pass project_type.
-      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/categories?project_type=${psrc}`);
-      // Sort alphabetically, prettify names.
-      const cats = r.categories
-        .map(c => c.name)
-        .sort((a, b) => a.localeCompare(b));
-      row.innerHTML = cats.map(name =>
-        `<button class="cat-item" data-cat="${esc(name)}">${esc(prettyCat(name))}</button>`).join("");
-      row.querySelectorAll(".cat-item").forEach(b => b.onclick = () => {
-        row.querySelectorAll(".cat-item").forEach(x => x.classList.remove("active"));
-        b.classList.add("active");
-        browsePluginCategory(psrc, b.dataset.cat);
-      });
-    }
+    const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/categories?project_type=plugin`);
+    // Sort alphabetically, prettify names.
+    const cats = r.categories
+      .map(c => c.name)
+      .sort((a, b) => a.localeCompare(b));
+    row.innerHTML = cats.map(name =>
+      `<button class="cat-item" data-cat="${esc(name)}">${esc(prettyCat(name))}</button>`).join("");
+    row.querySelectorAll(".cat-item").forEach(b => b.onclick = () => {
+      row.querySelectorAll(".cat-item").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      browsePluginCategory("plugin", b.dataset.cat);
+    });
   } catch (e) { /* categories are a bonus; search still works */ }
 }
 
@@ -247,16 +229,9 @@ async function browsePluginCategory(source, cat) {
   const grid = document.getElementById("plugin-results");
   grid.innerHTML = `<p class="muted">loading…</p>`;
   try {
-    if (source === "spiget") {
-      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/category/${encodeURIComponent(cat)}`);
-      grid.innerHTML = r.hits.map(h => pluginCardHTML("spiget", h.id, h.name, h.tag, h.downloads, "")).join("")
-        || `<p class="muted">no results</p>`;
-    } else {
-      // source is plugin, mod, or modpack — pass as project_type
-      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/search?sort=downloads&category=${encodeURIComponent(cat)}&project_type=${source}`);
-      grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("")
-        || `<p class="muted">no results</p>`;
-    }
+    const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/search?sort=downloads&category=${encodeURIComponent(cat)}&project_type=plugin`);
+    grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("")
+      || `<p class="muted">no results</p>`;
     bindCards();
   } catch (e) { grid.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
 }
@@ -1164,15 +1139,9 @@ async function pluginSearch() {
   const grid = document.getElementById("plugin-results");
   grid.innerHTML = `<p class="muted">searching…</p>`;
   try {
-    if (psrc === "spiget") {
-      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/search?q=${encodeURIComponent(q)}`);
-      grid.innerHTML = r.hits.map(h => pluginCardHTML("spiget", h.id, h.name, h.tag, h.downloads, "")).join("")
-        || `<p class="muted">no results</p>`;
-    } else {
-      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/search?q=${encodeURIComponent(q)}&sort=relevance&project_type=${psrc}`);
-      grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("")
-        || `<p class="muted">no results</p>`;
-    }
+    const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/search?q=${encodeURIComponent(q)}&sort=relevance&project_type=plugin`);
+    grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("")
+      || `<p class="muted">no results</p>`;
     bindCards();
   } catch (e) { grid.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
 }
@@ -1181,13 +1150,8 @@ async function pluginTrending() {
   const grid = document.getElementById("plugin-results");
   grid.innerHTML = `<p class="muted">loading…</p>`;
   try {
-    if (psrc === "spiget") {
-      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/trending`);
-      grid.innerHTML = r.hits.map(h => pluginCardHTML("spiget", h.id, h.name, h.tag, h.downloads, "")).join("");
-    } else {
-      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/trending?project_type=${psrc}`);
-      grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("");
-    }
+    const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/trending?project_type=plugin`);
+    grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("");
     bindCards();
   } catch (e) { grid.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
 }

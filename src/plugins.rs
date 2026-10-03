@@ -133,11 +133,14 @@ pub async fn modrinth_categories(
     state: &Arc<AppState>,
     project_type: &str,
 ) -> Result<Vec<serde_json::Value>> {
-    let pt = match project_type {
-        "plugin" | "mod" | "modpack" => project_type,
-        _ => "plugin",
+    // Modrinth's category tags API has no "plugin" project_type — plugins share
+    // the "mod" categories. Map plugin→mod for the category lookup.
+    let cat_pt = match project_type {
+        "plugin" => "mod",
+        "mod" | "modpack" => project_type,
+        _ => "mod",
     };
-    let key = format!("modrinth:tag:category:{}", pt);
+    let key = format!("modrinth:tag:category:{}", cat_pt);
     let body = state
         .cached_get(
             &key,
@@ -148,7 +151,7 @@ pub async fn modrinth_categories(
         .await?;
     let all: Vec<serde_json::Value> =
         serde_json::from_str(&body).context("parsing modrinth categories")?;
-    // Keep only the requested project type's categories with header "categories".
+    // Keep only the mapped project type's categories with header "categories".
     // Deduplicate by name (API has duplicates).
     let mut seen = std::collections::HashSet::new();
     let filtered: Vec<serde_json::Value> = all
@@ -157,7 +160,7 @@ pub async fn modrinth_categories(
             let cpt = c.get("project_type").and_then(|v| v.as_str()).unwrap_or("");
             let header = c.get("header").and_then(|v| v.as_str()).unwrap_or("");
             let name = c.get("name").and_then(|v| v.as_str()).unwrap_or("");
-            cpt == pt && header == "categories" && seen.insert(name.to_string())
+            cpt == cat_pt && header == "categories" && seen.insert(name.to_string())
         })
         .collect();
     Ok(filtered)
