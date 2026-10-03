@@ -269,10 +269,10 @@
 <div class="xl:col-span-3 flex items-center justify-center space-x-3 py-1">
 <div class="relative w-36 h-36 flex flex-col items-center">
 <svg class="w-36 h-24 mb-4" viewbox="0 0 120 70">
-<path d="M 15 50 A 45 45 0 0 0 105 50" fill="none" stroke="#162c46" stroke-linecap="round" stroke-width="8"></path>
-<path id="ram-arc" class="filter drop-shadow-[0_0_6px_rgba(0,240,255,0.7)]" d="M 15 50 A 45 45 0 0 0 105 50" fill="none" stroke="#00f0ff" stroke-dasharray="141.3" stroke-dashoffset="85" stroke-linecap="round" stroke-width="8"></path>
-<line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="23" y1="50" y2="50"></line>
-<circle cx="60" cy="50" fill="#ff9900" r="4.5"></circle>
+<path d="M 15 20 A 45 45 0 0 0 105 20" fill="none" stroke="#162c46" stroke-linecap="round" stroke-width="8"></path>
+<path id="ram-arc" class="filter drop-shadow-[0_0_6px_rgba(0,240,255,0.7)]" d="M 15 20 A 45 45 0 0 0 105 20" fill="none" stroke="#00f0ff" stroke-dasharray="141.3" stroke-dashoffset="85" stroke-linecap="round" stroke-width="8"></path>
+<line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="23" y1="20" y2="20"></line>
+<circle cx="60" cy="20" fill="#ff9900" r="4.5"></circle>
 </svg>
 <div class="text-center flex flex-col items-center">
 <span class="font-orbitron font-extrabold text-lg text-neon-amber tracking-wider leading-none" id="ram-use-text">—</span>
@@ -756,7 +756,7 @@ async function refreshRack() {
   if (needle) {
     const rad = (180 + pct * 180) * Math.PI / 180;
     const x2 = 60 + 37 * Math.cos(rad);
-    const y2 = 50 + 37 * Math.sin(rad);
+    const y2 = 20 + 37 * Math.sin(rad);
     needle.setAttribute("x2", x2.toFixed(1));
     needle.setAttribute("y2", y2.toFixed(1));
   }
