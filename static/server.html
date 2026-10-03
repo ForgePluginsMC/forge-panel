@@ -438,41 +438,48 @@ function invGrid(items, slots, cols) {
   const bySlot = new Map();
   (items || []).forEach(it => { if (it && it.slot !== undefined) bySlot.set(Number(it.slot), it); });
   return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, 1fr)">` +
-    slots.map(s => {
-      const it = bySlot.get(s);
-      const ghost = !it && SLOT_ICONS[s]
-        ? `<span class="slot-ghost">${SLOT_ICONS[s]}</span>` : "";
-      let inner = ghost;
-      if (it) {
-        const icon = `https://minecraft-api.vercel.app/api/item/${encodeURIComponent(it.id)}/icon.png`;
-        inner = `<img class="inv-icon" src="${icon}" alt="" loading="lazy" onerror="this.remove()">` +
-          `<span class="inv-item">${esc(prettyItem(it.id))}</span>` +
-          (it.count > 1 ? `<span class="inv-count">${it.count}</span>` : "");
-      }
-      return `<div class="inv-slot${it ? " filled" : ""}" title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
-    }).join("") + `</div>`;
+    slots.map(s => invSlot(bySlot.get(s), SLOT_GHOSTS[s])).join("") + `</div>`;
 }
 
-// Faint vanilla-style silhouettes for empty armor/offhand slots.
-const SLOT_ICONS = {
-  103: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.5c-4.6 0-7.8 3.4-7.8 8V15h15.6v-3.5c0-4.6-3.2-8-7.8-8z"/><path d="M4.2 12.5h15.6"/></svg>`,
-  102: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3.5L4.5 7l2.3 2.3L8 17.5h8l1.2-8.2L19.5 7 15 3.5c-.9 1.3-2 1.9-3 1.9s-2.1-.6-3-1.9z"/></svg>`,
-  101: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3h8v18h-2.5v-7h-3v7H8z"/></svg>`,
-  100: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 4h4v8l5 3v6H7z"/></svg>`,
-  "-106": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l7.5 2.8v5.4c0 4.9-3.2 8.3-7.5 10.3-4.3-2-7.5-5.4-7.5-10.3V5.3z"/></svg>`,
+// Single inventory slot. `ghost` is an optional ghost-icon data URI for empty armor slots.
+function invSlot(it, ghost) {
+  let inner = "";
+  if (it) {
+    const icon = `https://minecraft-api.vercel.app/api/item/${encodeURIComponent(it.id)}/icon.png`;
+    inner = `<img class="inv-icon" src="${icon}" alt="" loading="lazy" onerror="this.remove()">` +
+      `<span class="inv-item">${esc(prettyItem(it.id))}</span>` +
+      (it.count > 1 ? `<span class="inv-count">${it.count}</span>` : "");
+  } else if (ghost) {
+    inner = `<img class="slot-ghost" src="${ghost}" alt="" draggable="false">`;
+  }
+  return `<div class="inv-slot${it ? " filled" : ""}" title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
+}
+
+// Vanilla armor slot ghost icons (pixel art extracted from the client).
+const VANILLA_ICONS = {
+  helmet: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAsCAYAAAAXb/p7AAAAmElEQVR4nO2ZwQmEMBQFjVioZawVaBl2qncXfITJLv8wczUxw/MRDbYp8NnPK40hHNva3q7Pv1x8BApSvp7/s3OpI5S0XvkEFaS0f3cu8fQpn6CCFAUpClIUpChIWdKAdCZJ7246v3yCClJiB+n3IZ1fPkEFKZ6LKQpSFKQoSIl73Oh9sfd+5RNUkNLdJ/rfpLfD5RNUkHIDo9QxuSRQEWEAAAAASUVORK5CYII=",
+  chestplate: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADcAAAA3CAYAAACo29JGAAAAv0lEQVR4nO2a0QnDMAwF606aMdoJ2jG6afsbUohjFBGfuPsN2D6ehUVQuyXzeH2+e9/fz6Vl7X3PWngGlKMyfN97NbSlV1Nnr7emdHLKUfm7v1e+S0cYOV/p5JSj0rZ3+OqairL2KZ2cclSUo6IclW5vOfu7t3fe0skpR0U5KspRUY6KclS6feNsvebIeUonpxwV5agoR0U5KspRCc+hZPeakf1KJ6cclXC9ROdWMudeSienHJX0/yHOOCdRWu4HOM0/BI0SFLgAAAAASUVORK5CYII=",
+  leggings: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAzCAYAAADl70o1AAAAjklEQVR4nO3ZsQmAMBBAUSMO6hg6gY7hptrKWcTwMV7xX6dF+ByBBC1DsGzHGd/1tK9zuT+Pf4W8ZSBV4p6Le6C32JN+ggZSBlIGUgZSBlITXaB2f6Rne/oJGkg178HW+yO9b6afoIGUgZSBlIGUgZSBlIGUgZSBlIGUgZSBlIGUgZSBlIHU49vM1/+LW9dPP8H0gRf3pxxFRPhMAwAAAABJRU5ErkJggg==",
+  boots: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADcAAAAoCAYAAABaW2IIAAAAmElEQVR4nO2Z0QmAMAwFrXRQx9AJ6hhuqr9SoSFUixfefYeQ4xEKaZqcrOU4PfX7tqSR/e7MnsY0JEclWwX1Try9QzXe/q360MlJjorkqEiOiuSoSI6K5KhIjorkqEiOyuOG4r2ZjKaepzVv6OQkRyX/fccsWjsYOjnJUTH/Cix6d9bzbnkJnZzkqKSv/9N66ZkvdHKSo3IBARk1uRrcSE4AAAAABJRU5ErkJggg==",
+};
+const SLOT_GHOSTS = {
+  103: VANILLA_ICONS.helmet,
+  102: VANILLA_ICONS.chestplate,
+  101: VANILLA_ICONS.leggings,
+  100: VANILLA_ICONS.boots,
 };
 
 const GM_NAMES = { 0: "Survival", 1: "Creative", 2: "Adventure", 3: "Spectator" };
 
 function playerModalHTML(info) {
   const n = info.name, e = encodeURIComponent(n);
+  const bySlotInv = invSlotMap(info.inventory);
   const stat = (label, val) =>
     `<div class="pstat"><div class="rack-label">${label}</div><div class="seg-sm">${val}</div></div>`;
   const hp = info.health != null ? Math.max(0, Math.round(info.health)) : "—";
   const pos = info.pos ? info.pos.map(v => Math.round(v * 10) / 10).join(", ") : "—";
-  // inventory slot layout: armor/offhand, main 9-35, hotbar 0-8
+  // inventory slot layout: armor/offhand via invSlot, main 9-35, hotbar 0-8
   const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
-  const armorRow = [103, 102, 101, 100, -106];
   return `
   <div class="phead-row">
     <img class="phead-lg" alt="" src="https://minotar.net/helm/${e}/64.png" onerror="this.style.display='none'">
@@ -522,14 +529,37 @@ function playerModalHTML(info) {
     </div>
   </div>
   <p class="small muted" id="paction-out"></p>
-  <h4>Inventory <span class="muted small" id="inv-debug">[debug: ${info.inventory ? info.inventory.length + " items" : "inventory=" + typeof info.inventory}]</span></h4>
-  ${invGrid(info.inventory, armorRow, 5)}
-  <div style="height:8px"></div>
-  ${invGrid(info.inventory, range(9, 35), 9)}
-  <div style="height:8px"></div>
-  ${invGrid(info.inventory, range(0, 8), 9)}
+  <h4>Inventory</h4>
+  <div class="mc-inv">
+    <div class="mc-armor-row">
+      <div class="mc-armor-col">
+        ${invSlot(bySlotInv.get(103), SLOT_GHOSTS[103])}
+        ${invSlot(bySlotInv.get(102), SLOT_GHOSTS[102])}
+      </div>
+      <img class="mc-char" alt="" src="https://minotar.net/body/${e}/100.png" onerror="this.style.display='none'">
+      <div class="mc-armor-col">
+        ${invSlot(bySlotInv.get(101), SLOT_GHOSTS[101])}
+        ${invSlot(bySlotInv.get(100), SLOT_GHOSTS[100])}
+      </div>
+    </div>
+    <div style="height:8px"></div>
+    ${invGrid(info.inventory, range(9, 35), 9)}
+    <div style="height:8px"></div>
+    <div class="mc-hotbar-row">
+      ${invSlot(bySlotInv.get(-106), null)}
+      ${invGrid(info.inventory, range(0, 8), 9)}
+      <button class="inv-slot inv-delete" data-act="clear" title="Delete entire inventory">✕</button>
+    </div>
+  </div>
   <h4>Ender chest</h4>
   ${invGrid(info.ender, range(0, 26), 9)}`;
+}
+
+// Build a slot map once per render for the armor/offhand lookups.
+function invSlotMap(items) {
+  const m = new Map();
+  (items || []).forEach(it => { if (it && it.slot !== undefined) m.set(Number(it.slot), it); });
+  return m;
 }
 
 async function pcmd(cmd, after) {
@@ -589,6 +619,7 @@ function bindPlayerActions() {
       if (!x || !y || !z) return;
       pcmd(`tp ${n} ${x} ${y} ${z}`);
     }
+    else if (a === "clear") { if (confirm(`Delete ALL items in ${n}'s inventory?`)) pcmd(`clear ${n}`); }
   });
 }
 
