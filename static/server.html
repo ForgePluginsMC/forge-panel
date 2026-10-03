@@ -267,14 +267,14 @@
 </div>
 
 <div class="xl:col-span-3 flex items-center justify-center space-x-3 py-1">
-<div class="relative w-36 h-28 flex flex-col items-center justify-end">
-<svg class="w-36 h-24 transform -rotate-180" viewbox="0 0 120 70">
-<path d="M 15 65 A 45 45 0 0 1 105 65" fill="none" stroke="#162c46" stroke-linecap="round" stroke-width="8"></path>
-<path id="ram-arc" class="filter drop-shadow-[0_0_6px_rgba(0,240,255,0.7)]" d="M 15 65 A 45 45 0 0 1 105 65" fill="none" stroke="#00f0ff" stroke-dasharray="141.3" stroke-dashoffset="85" stroke-linecap="round" stroke-width="8"></path>
-<line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="78" y1="65" y2="28"></line>
+<div class="relative w-36 h-36 flex flex-col items-center">
+<svg class="w-36 h-24" viewbox="0 0 120 70">
+<path d="M 105 65 A 45 45 0 0 1 15 65" fill="none" stroke="#162c46" stroke-linecap="round" stroke-width="8"></path>
+<path id="ram-arc" class="filter drop-shadow-[0_0_6px_rgba(0,240,255,0.7)]" d="M 105 65 A 45 45 0 0 1 15 65" fill="none" stroke="#00f0ff" stroke-dasharray="141.3" stroke-dashoffset="85" stroke-linecap="round" stroke-width="8"></path>
+<line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="23" y1="65" y2="65"></line>
 <circle cx="60" cy="65" fill="#ff9900" r="4.5"></circle>
 </svg>
-<div class="text-center absolute bottom-0 flex flex-col items-center" style="z-index: 5;">
+<div class="text-center mt-1 flex flex-col items-center">
 <span class="font-orbitron font-extrabold text-lg text-neon-amber tracking-wider leading-none" id="ram-use-text">—</span>
 <span class="text-[10px] uppercase text-slate-400 tracking-widest mt-1">RAM USE</span>
 </div>
@@ -754,8 +754,7 @@ async function refreshRack() {
   // Needle rotation (from -90deg to +90deg)
   const needle = document.getElementById("ram-needle");
   if (needle) {
-    const angle = pct * 180;
-    const rad = angle * Math.PI / 180;
+    const rad = (360 - pct * 180) * Math.PI / 180;
     const x2 = 60 + 37 * Math.cos(rad);
     const y2 = 65 + 37 * Math.sin(rad);
     needle.setAttribute("x2", x2.toFixed(1));
