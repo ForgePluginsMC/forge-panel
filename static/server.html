@@ -177,6 +177,24 @@
     .cfg-ctl { flex: 1; display: flex; align-items: center; }
     .cfg-section { font-family: monospace; font-size: 12px; color: #00f0ff; margin: 16px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid #1e3a52; }
 
+
+    /* Dark select for dynamic content */
+    .dark-select {
+      background: #050b12 !important;
+      border: 1px solid #234468 !important;
+      color: #e2e8f0 !important;
+      padding: 8px 12px !important;
+      border-radius: 4px !important;
+      font-family: monospace !important;
+      font-size: 13px !important;
+      width: 100% !important;
+      max-width: 300px !important;
+    }
+    .dark-select option {
+      background: #09111c !important;
+      color: #e2e8f0 !important;
+    }
+
 </style>
 </head>
 <body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">
@@ -1661,8 +1679,8 @@ function controlHTML(e) {
     case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
     case "enum": {
       const cur = String(e.value).toLowerCase();
-      return `<select ${dl} style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
-        `<option value="${esc(o)}" style="background:#09111c;color:#e2e8f0;"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
+      return `<select ${dl} class="dark-select">` + e.kind.options.map(o =>
+        `<option value="${esc(o)}"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
     }
     default: return `<input type="text" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">`;
   }
