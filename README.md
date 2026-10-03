@@ -90,8 +90,9 @@ See `forge-panel.example.toml`. Per-server options:
 | `xms_mb` / `xmx_mb` | heap limits, applied as `-Xms`/`-Xmx` |
 | `role` | `server` (default) or `proxy` |
 | `behind_proxy` | name of the proxy this server sits behind |
-| `mc_version` | e.g. `26.2` — used to filter plugin versions |
 | `remote_host` | hostname/IP for remote servers (RCON only; `rcon_port` required) |
+
+The panel auto-detects each server's Minecraft version from its JAR (`version.json`) — used to filter plugin versions. No config needed.
 
 ### Remote servers
 
