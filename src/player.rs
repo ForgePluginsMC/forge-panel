@@ -266,6 +266,50 @@ pub fn gamemode_name(gm: i32) -> &'static str {
     }
 }
 
+/// Slots we care about: hotbar 0-8, main 9-35, armor 100-103, offhand -106.
+const INV_SLOTS: &[i32] = &[
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+    24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 100, 101, 102, 103, -106,
+];
+const ENDER_SLOTS: &[i32] = &[
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+    23, 24, 25, 26,
+];
+
+/// Fetch an item list (Inventory / EnderItems).
+///
+/// `data get` truncates long NBT with `...`, so a single full-list fetch is
+/// unreliable once the player has more than a couple of items. Try the cheap
+/// full fetch first; if it comes back truncated, fall back to per-slot
+/// queries (`Inventory[{Slot:0b}]`), which are short and never truncated.
+async fn fetch_items(
+    pool: &RconPool,
+    host: &str,
+    port: u16,
+    pw: &str,
+    player: &str,
+    path: &str,
+    slots: &[i32],
+) -> Vec<ItemStack> {
+    if let Ok(raw) = data_get(pool, host, port, pw, player, path).await {
+        if !raw.contains("...") {
+            return parse_items(&raw);
+        }
+    }
+    let mut items = Vec::new();
+    for &slot in slots {
+        let slot_path = format!("{}[{{Slot:{}b}}]", path, slot);
+        // Empty slots answer "Found no elements matching..." → Err → skipped.
+        if let Ok(raw) = data_get(pool, host, port, pw, player, &slot_path).await {
+            if let Some(item) = parse_item(&raw) {
+                items.push(item);
+            }
+        }
+    }
+    items.sort_by_key(|it| it.slot);
+    items
+}
+
 /// Fetch everything for the player panel. The first `data get` must succeed
 /// (it proves the player is online); the rest are best-effort.
 pub async fn fetch_player(
@@ -313,16 +357,8 @@ pub async fn fetch_player(
         .await
         .ok()
         .and_then(|s| parse_pos(&s));
-    let inventory = data_get(pool, host, port, pw, player, "Inventory")
-        .await
-        .ok()
-        .map(|s| parse_items(&s))
-        .unwrap_or_default();
-    let ender = data_get(pool, host, port, pw, player, "EnderItems")
-        .await
-        .ok()
-        .map(|s| parse_items(&s))
-        .unwrap_or_default();
+    let inventory = fetch_items(pool, host, port, pw, player, "Inventory", INV_SLOTS).await;
+    let ender = fetch_items(pool, host, port, pw, player, "EnderItems", ENDER_SLOTS).await;
 
     Ok(PlayerInfo {
         name: player.to_string(),
