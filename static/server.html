@@ -447,7 +447,7 @@ function invSlot(it, ghost) {
   if (it) {
     const iconName = it.id.replace(/^minecraft:/, "");
     const icon = `/static/items/${encodeURIComponent(iconName)}`;
-    inner = `<img class="inv-icon" src="${icon}" alt="" loading="lazy" onerror="this.remove()">` +
+    inner = `<img class="inv-icon" src="${icon}" alt="" loading="lazy" onerror="this.style.display='none'">` +
       `<span class="inv-item">${esc(prettyItem(it.id))}</span>` +
       (it.count > 1 ? `<span class="inv-count">${it.count}</span>` : "");
   } else if (ghost) {
@@ -460,8 +460,8 @@ function invSlot(it, ghost) {
 const VANILLA_ICONS = {
   helmet: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAsCAYAAAAXb/p7AAAAmElEQVR4nO2ZwQmEMBQFjVioZawVaBl2qncXfITJLv8wczUxw/MRDbYp8NnPK40hHNva3q7Pv1x8BApSvp7/s3OpI5S0XvkEFaS0f3cu8fQpn6CCFAUpClIUpChIWdKAdCZJ7246v3yCClJiB+n3IZ1fPkEFKZ6LKQpSFKQoSIl73Oh9sfd+5RNUkNLdJ/rfpLfD5RNUkHIDo9QxuSRQEWEAAAAASUVORK5CYII=",
   chestplate: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADcAAAA3CAYAAACo29JGAAAAv0lEQVR4nO2a0QnDMAwF606aMdoJ2jG6afsbUohjFBGfuPsN2D6ehUVQuyXzeH2+e9/fz6Vl7X3PWngGlKMyfN97NbSlV1Nnr7emdHLKUfm7v1e+S0cYOV/p5JSj0rZ3+OqairL2KZ2cclSUo6IclW5vOfu7t3fe0skpR0U5KspRUY6KclS6feNsvebIeUonpxwV5agoR0U5KspRCc+hZPeakf1KJ6cclXC9ROdWMudeSienHJX0/yHOOCdRWu4HOM0/BI0SFLgAAAAASUVORK5CYII=",
-  leggings: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAzCAYAAADl70o1AAAAjklEQVR4nO3ZsQmAMBBAUSMO6hg6gY7hptrKWcTwMV7xX6dF+ByBBC1DsGzHGd/1tK9zuT+Pf4W8ZSBV4p6Le6C32JN+ggZSBlIGUgZSBlITXaB2f6Rne/oJGkg178HW+yO9b6afoIGUgZSBlIGUgZSBlIGUgZSBlIGUgZSBlIGUgZSBlIHU49vM1/+LW9dPP8H0gRf3pxxFRPhMAwAAAABJRU5ErkJggg==",
-  boots: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADcAAAAoCAYAAABaW2IIAAAAmElEQVR4nO2Z0QmAMAwFrXRQx9AJ6hhuqr9SoSFUixfefYeQ4xEKaZqcrOU4PfX7tqSR/e7MnsY0JEclWwX1Try9QzXe/q360MlJjorkqEiOiuSoSI6K5KhIjorkqEiOyuOG4r2ZjKaepzVv6OQkRyX/fccsWjsYOjnJUTH/Cix6d9bzbnkJnZzkqKSv/9N66ZkvdHKSo3IBARk1uRrcSE4AAAAABJRU5ErkJggg==",
+  leggings: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEuNSI+PHBhdGggZD0iTTcgM2gxMHY3aC0zdjExSDEwVjEwSDd6Ii8+PC9zdmc+",
+  boots: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEuNSI+PHBhdGggZD0iTTcgM3YxMGg0djVoNnYtNWgtNFYzeiIvPjxwYXRoIGQ9Ik0xNyAzdjEwaC00djVIN3YtNWg0VjN6IiBvcGFjaXR5PSIwLjUiLz48L3N2Zz4=",
 };
 const SLOT_GHOSTS = {
   103: VANILLA_ICONS.helmet,
