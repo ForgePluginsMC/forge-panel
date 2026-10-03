@@ -1197,7 +1197,7 @@ async function pluginDetail(key) {
     }
     el.innerHTML = `<h3 style="margin-top:0">${esc(title)}</h3>
       <p class="muted">${esc(desc || "")}</p>
-      <label>Version (filtered to your server's MC version)</label>
+      <label>Version</label>
       <select id="pv-select">${versions.map(v => `<option value="${esc(v.id)}">${verLabel(v)}</option>`).join("")}</select>
       <div style="margin-top:14px"><button class="arcade amber" id="pv-install" style="padding:10px 20px">INSTALL</button>
       <span class="small muted" id="pv-msg"></span></div>`;

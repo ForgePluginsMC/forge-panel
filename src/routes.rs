@@ -1451,22 +1451,11 @@ async fn plugins_modrinth_versions(
 ) -> ApiResult<Json<serde_json::Value>> {
     let cfg = server_or_404(&state, &name)?;
     let loaders = ["paper", "spigot", "purpur", "bukkit"];
-    // Detect MC version from JAR for filtering.
-    let jar_path = cfg.dir.join(&cfg.jar);
-    let mc_version = plugins::detect_mc_version_from_jar(&jar_path);
-    let games: Vec<&str> = mc_version.as_deref().map(|v| vec![v]).unwrap_or_default();
-    let versions = plugins::modrinth_versions(&state, &id, &loaders, &games)
+    // Fetch all versions; frontend shows MC versions in the label.
+    // The search list already filters incompatible plugins.
+    let versions = plugins::modrinth_versions(&state, &id, &loaders, &[])
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
-    // Filter versions by compatibility (Modrinth's API filter is unreliable).
-    // Be lenient: same major, minor within 2.
-    let versions: Vec<_> = match &mc_version {
-        Some(v) => versions
-            .into_iter()
-            .filter(|ver| plugins::is_version_compatible(v, &ver.game_versions))
-            .collect(),
-        None => versions,
-    };
     Ok(Json(serde_json::json!({ "versions": versions })))
 }
 
