@@ -1130,7 +1130,7 @@ function playerModalHTML(info) {
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3 border-t border-cyber-border/70 text-xs font-mono">
         <div class="md:col-span-3 flex items-center bg-cyber-slot border border-cyber-border rounded px-2">
           <span class="text-slate-500 mr-2 text-[11px]">GM:</span>
-          <select id="p-gamemode" class="w-full bg-transparent border-0 text-cyber-cyan py-1 px-1 focus:ring-0 text-xs font-mono cursor-pointer" style="background:#050b12!important;border:1px solid #234468!important;color:#00f0ff!important;">
+          <select id="p-gamemode" class="w-full bg-transparent border-0 text-cyber-cyan py-1 px-1 focus:ring-0 text-xs font-mono cursor-pointer" style="background:#050b12;border:1px solid #234468;color:#00f0ff;">
             <option class="bg-cyber-panel text-white" value="survival"${gmLower==='survival'?' selected':''}>Survival</option>
             <option class="bg-cyber-panel text-white" value="creative"${gmLower==='creative'?' selected':''}>Creative</option>
             <option class="bg-cyber-panel text-white" value="spectator"${gmLower==='spectator'?' selected':''}>Spectator</option>
@@ -1657,14 +1657,14 @@ function controlHTML(e) {
       const on = /^(true)$/i.test(e.value);
       return `<label class="toggle"><input type="checkbox" ${dl}${on ? " checked" : ""}><span class="tslot"></span><span class="tknob"></span><span class="tlabel on">ON</span><span class="tlabel off">OFF</span></label>`;
     }
-    case "int": return `<input type="number" step="1" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
-    case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
+    case "int": return `<input type="number" step="1" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
+    case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
     case "enum": {
       const cur = String(e.value).toLowerCase();
-      return `<select ${dl} style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
-        `<option value="${esc(o)}" style="background:#09111c!important;color:#e2e8f0!important;"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
+      return `<select ${dl} style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
+        `<option value="${esc(o)}" style="background:#09111c;color:#e2e8f0;"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
     }
-    default: return `<input type="text" ${dl} value="${esc(e.value)}" style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">`;
+    default: return `<input type="text" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">`;
   }
 }
 
@@ -1897,7 +1897,7 @@ async function pluginDetail(key) {
     el.innerHTML = `<h3 style="margin-top:0">${esc(title)}</h3>
       <p class="muted">${esc(desc || "")}</p>
       <label>Version</label>
-      <select id="pv-select" style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;margin:8px 0;">${versions.map(v => `<option value="${esc(v.id)}" style="background:#09111c;color:#e2e8f0;">${verLabel(v)}</option>`).join("")}</select>
+      <select id="pv-select" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;margin:8px 0;">${versions.map(v => `<option value="${esc(v.id)}" style="background:#09111c;color:#e2e8f0;">${verLabel(v)}</option>`).join("")}</select>
       <div style="margin-top:14px"><button id="pv-install" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-6 py-2.5 rounded-sm clip-tech-chamfer">INSTALL</button>
       <span class="small muted" id="pv-msg"></span></div>`;
     document.getElementById("pv-install").onclick = async () => {
