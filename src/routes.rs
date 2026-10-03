@@ -102,6 +102,28 @@ async fn app_js() -> impl IntoResponse {
     )
 }
 
+/// Vanilla item icon: `/static/items/diamond.png`.
+/// Icons are extracted from the Mojang client JAR into `{data_dir}/item-icons/`.
+async fn item_icon(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> impl IntoResponse {
+    // Sanitize: bare file stem only, no paths.
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        || name.is_empty()
+        || name.len() > 64
+    {
+        return Err(err(StatusCode::BAD_REQUEST, "bad icon name"));
+    }
+    let path = crate::icons::icons_dir(&state.data_dir).join(format!("{}.png", name));
+    let bytes = tokio::fs::read(&path)
+        .await
+        .map_err(|_| err(StatusCode::NOT_FOUND, "no such item icon"))?;
+    Ok(([(header::CONTENT_TYPE, "image/png")], bytes))
+}
+
 // ---------------------------------------------------------------------------
 // Auth endpoints (public)
 // ---------------------------------------------------------------------------
@@ -1434,6 +1456,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/login", get(login_page))
         .route("/static/style.css", get(style_css))
         .route("/static/app.js", get(app_js))
+        .route("/static/items/{name}", get(item_icon))
         .route("/api/setup-needed", get(setup_needed))
         .route("/api/setup", post(setup))
         .route("/api/login", post(login));

@@ -185,6 +185,11 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 .pactions { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; }
 .pactions .arcade { padding: 8px 16px; font-size: 13px; }
 .pactions .arcade[disabled] { opacity: 0.35; cursor: not-allowed; }
+.pactions.compact { gap: 6px; align-items: center; }
+.pactions.compact .arcade { padding: 5px 10px; font-size: 11px; }
+.pactions.compact .btn.mini, .pactions.compact select.mini, .pactions.compact input.mini { padding: 5px 8px; font-size: 11px; }
+.pactions.compact input.mini { width: auto; }
+.psep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
 .prow { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 10px; align-items: flex-end; }
 .prow input, .prow select { margin-right: 6px; }
 .inv-grid { display: grid; gap: 4px; }

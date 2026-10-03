@@ -3,6 +3,7 @@ mod backup;
 mod config;
 mod db;
 mod geyser;
+mod icons;
 mod installer;
 mod mc;
 mod player;

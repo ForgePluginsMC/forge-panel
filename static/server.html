@@ -445,7 +445,8 @@ function invGrid(items, slots, cols) {
 function invSlot(it, ghost) {
   let inner = "";
   if (it) {
-    const icon = `https://minecraft-api.vercel.app/api/item/${encodeURIComponent(it.id)}/icon.png`;
+    const iconName = it.id.replace(/^minecraft:/, "");
+    const icon = `/static/items/${encodeURIComponent(iconName)}`;
     inner = `<img class="inv-icon" src="${icon}" alt="" loading="lazy" onerror="this.remove()">` +
       `<span class="inv-item">${esc(prettyItem(it.id))}</span>` +
       (it.count > 1 ? `<span class="inv-count">${it.count}</span>` : "");
@@ -498,7 +499,7 @@ function playerModalHTML(info) {
     ${stat("Position", esc(pos))}
   </div>
   <h4>Actions</h4>
-  <div class="pactions">
+  <div class="pactions compact">
     <button class="arcade green" data-act="heal">HEAL</button>
     <button class="arcade green" data-act="feed">FEED</button>
     <button class="arcade amber" data-act="freeze">FREEZE</button>
@@ -509,24 +510,19 @@ function playerModalHTML(info) {
     <button class="arcade amber" data-act="op">OP</button>
     <button class="arcade amber" data-act="deop">DEOP</button>
     <button class="arcade" data-act="mute" disabled title="vanilla/Paper has no mute command — needs a chat plugin">MUTE</button>
-  </div>
-  <div class="prow">
-    <div><label class="rack-label">Gamemode</label>
-      <select id="p-gamemode">
-        <option value="survival">Survival</option><option value="creative">Creative</option>
-        <option value="adventure">Adventure</option><option value="spectator">Spectator</option>
-      </select>
-      <button class="btn" data-act="gamemode">Set</button>
-    </div>
-    <div><label class="rack-label">Give</label>
-      <input id="p-give-item" placeholder="minecraft:diamond" size="18">
-      <input id="p-give-count" placeholder="1" size="4">
-      <button class="btn" data-act="give">Give</button>
-    </div>
-    <div><label class="rack-label">Teleport</label>
-      <input id="p-tp-x" placeholder="x" size="6"><input id="p-tp-y" placeholder="y" size="6"><input id="p-tp-z" placeholder="z" size="6">
-      <button class="btn" data-act="tp">TP</button>
-    </div>
+    <span class="psep"></span>
+    <select id="p-gamemode" class="mini">
+      <option value="survival">Survival</option><option value="creative">Creative</option>
+      <option value="adventure">Adventure</option><option value="spectator">Spectator</option>
+    </select>
+    <button class="btn mini" data-act="gamemode">Set</button>
+    <span class="psep"></span>
+    <input id="p-give-item" class="mini" placeholder="minecraft:diamond" size="14">
+    <input id="p-give-count" class="mini" placeholder="1" size="3">
+    <button class="btn mini" data-act="give">Give</button>
+    <span class="psep"></span>
+    <input id="p-tp-x" class="mini" placeholder="x" size="5"><input id="p-tp-y" class="mini" placeholder="y" size="5"><input id="p-tp-z" class="mini" placeholder="z" size="5">
+    <button class="btn mini" data-act="tp">TP</button>
   </div>
   <p class="small muted" id="paction-out"></p>
   <h4>Inventory</h4>
@@ -540,6 +536,9 @@ function playerModalHTML(info) {
       <div class="mc-armor-col">
         ${invSlot(bySlotInv.get(101), SLOT_GHOSTS[101])}
         ${invSlot(bySlotInv.get(100), SLOT_GHOSTS[100])}
+      </div>
+      <div class="mc-armor-col">
+        ${invSlot(bySlotInv.get(-106), null)}
       </div>
     </div>
     <div style="height:8px"></div>
