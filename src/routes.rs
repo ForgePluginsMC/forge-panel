@@ -845,6 +845,10 @@ async fn console_stream(
 async fn tail_file(path: &std::path::Path, tx: mpsc::Sender<Result<Event, Infallible>>) {
     async fn send_lines(text: &str, tx: &mpsc::Sender<Result<Event, Infallible>>) {
         for line in text.lines() {
+            // Suppress RCON connect/disconnect spam from the panel's own commands.
+            if line.contains("RCON Client") || line.contains("RCON Listener") {
+                continue;
+            }
             // Stop if the client disconnected.
             if tx.send(Ok(Event::default().data(line))).await.is_err() {
                 break;
