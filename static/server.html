@@ -730,7 +730,15 @@ async function refreshHeader() {
 // Instrument rack: RAM gauge, TPS gauge (via RCON), player 7-seg, LED bar.
 async function refreshRack() {
   const s = serverInfo;
-  if (!s || !s.running) return;
+  if (!s || !s.running) {
+    // Server offline — clear the meter instead of showing stale values.
+    document.getElementById("ram-use-text").textContent = "—";
+    document.getElementById("ram-alloc-text").textContent = "—";
+    document.getElementById("ram-pct-text").textContent = "OFFLINE";
+    const arc = document.getElementById("ram-arc");
+    if (arc) arc.setAttribute("stroke-dashoffset", "141.3");
+    return;
+  }
   const maxRam = s.xmx_mb || 4096;
   const memMB = s.memory_mb || 0;
   const pct = Math.min(1, memMB / maxRam);
