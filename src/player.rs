@@ -256,6 +256,7 @@ pub fn parse_banlist(s: &str) -> Vec<String> {
     }
 }
 
+#[allow(dead_code)]
 pub fn gamemode_name(gm: i32) -> &'static str {
     match gm {
         0 => "Survival",

@@ -11,8 +11,3 @@ pub fn icons_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("item-icons")
 }
 
-/// Map `minecraft:diamond_sword` -> `diamond_sword.png` on disk.
-pub fn icon_path(dir: &Path, item_id: &str) -> PathBuf {
-    let name = item_id.strip_prefix("minecraft:").unwrap_or(item_id);
-    dir.join(format!("{}.png", name))
-}

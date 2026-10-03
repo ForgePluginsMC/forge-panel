@@ -3,103 +3,169 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>forge-panel — install</title>
+<title>FORGE-PANEL // Install</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css?v=2">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: {
+      'neon-cyan': '#00f0ff', 'neon-amber': '#ff9900', 'neon-crimson': '#ff2a5f', 'neon-green': '#00ff88',
+      'panel': '#09111c', 'panel-border': '#15293f', 'panel-border-bright': '#234468',
+    },
+    fontFamily: {
+      orbitron: ['Orbitron', 'sans-serif'],
+      mono: ['"Share Tech Mono"', 'monospace'],
+      code: ['"JetBrains Mono"', 'monospace'],
+    }
+  } }
+}
+</script>
+<style>
+body {
+  background-color: #04080e;
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px; color: #b5c7db;
+}
+.hud-bracket-container { position: relative; }
+.hud-bracket-container::before {
+  content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+  border-top: 2px solid #ff9900; border-left: 2px solid #ff9900; pointer-events: none; z-index: 10;
+}
+.hud-bracket-container::after {
+  content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
+  border-bottom: 2px solid #ff9900; border-right: 2px solid #ff9900; pointer-events: none; z-index: 10;
+}
+.clip-tech-chamfer {
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.muted { color: #64748b; }
+.small.muted { color: #64748b; font-size: 11px; }
+.error { color: #ff2a5f; }
+.ok { color: #00ff88; }
+select, input[type="text"], input:not([type]) {
+  background: #050b12; border: 1px solid #234468; color: #e2e8f0;
+  padding: 8px 12px; border-radius: 4px; font-size: 13px; width: 100%;
+}
+select:focus, input:focus { outline: none; border-color: #00f0ff; }
+select option { background: #09111c; }
+label {
+  display: block; color: #94a3b8; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.05em; margin: 12px 0 6px 0; font-family: 'Orbitron', sans-serif;
+}
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid #15293f; font-size: 13px; }
+th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+.btn { padding: 6px 12px; background: #0d1826; border: 1px solid #234468; color: #b5c7db; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.btn:hover { border-color: #00f0ff; color: #00f0ff; }
+.logbox {
+  background: #04080e; border: 1px solid #15293f; border-radius: 4px;
+  padding: 12px; font-family: monospace; font-size: 12px; color: #94a3b8;
+  max-height: 300px; overflow-y: auto; white-space: pre-wrap;
+}
+/* Toggle switch */
+.toggle { position: relative; display: inline-block; width: 48px; height: 24px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.tslot { position: absolute; inset: 0; background: #15293f; border-radius: 12px; transition: 0.2s; }
+.tknob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: #64748b; border-radius: 50%; transition: 0.2s; }
+.toggle input:checked ~ .tslot { background: #00f0ff33; border: 1px solid #00f0ff; }
+.toggle input:checked ~ .tknob { left: 27px; background: #00f0ff; }
+.tlabel { display: none; }
+</style>
 </head>
-<body>
-<header class="top">
-  <h1><span class="flame">🔥</span> <a href="/" style="color:var(--text)">forge-panel</a> <span class="muted">/ install</span></h1>
-  <nav>
-    <a href="/">Dashboard</a>
-    <a href="/install">Install</a>
-    <button onclick="logout()">Logout</button>
-  </nav>
+<body class="min-h-screen font-mono text-sm">
+<header class="w-full bg-[#070e17] border-b border-panel-border px-4 py-2.5 flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded border border-neon-amber/50 bg-neon-amber/10 flex items-center justify-center text-neon-amber">
+<svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C9.5 6 12 8.5 10 11.5C9 10 8 9.5 8 9.5C6 12.5 7 16 9 18C7.5 18 6 16.5 6 15C4.5 17.5 5 20.5 8 22C11 23.5 16 23 18 19C20 15 17 11 15 10C15 10 15.5 12 14 13C12.5 14 11 12 12 9C12.5 7.5 13.5 5.5 12 2Z"/></svg>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="font-orbitron font-extrabold tracking-widest text-lg text-white">FORGE-PANEL</span>
+<span class="text-neon-cyan/60 font-bold text-sm">/</span>
+<span class="font-orbitron font-bold text-sm tracking-wider text-neon-cyan">INSTALL</span>
+</div>
+</div>
+<nav class="flex items-center space-x-1 text-xs">
+<a href="/" class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white uppercase">Dashboard</a>
+<a href="/install" class="px-3.5 py-1.5 rounded-sm border border-neon-cyan text-neon-cyan bg-neon-cyan/10 uppercase font-bold">Install</a>
+<button onclick="logout()" class="px-3 py-1 text-xs uppercase font-orbitron text-neon-crimson border border-neon-crimson/50 rounded-sm ml-2">Logout</button>
+</nav>
 </header>
-<main>
-  <div class="card screws">
-    <h2>New server</h2>
-    <label>Server type</label>
-    <select id="itype"></select>
-    <div id="version-row">
-      <label>Version</label>
-      <select id="iversion"></select>
-      <div style="margin-top:10px; display:flex; gap:12px; align-items:center">
-        <label class="toggle">
-          <input type="checkbox" id="isnap">
-          <span class="tslot"></span>
-          <span class="tknob"></span>
-          <span class="tlabel on">ON</span>
-          <span class="tlabel off">OFF</span>
-        </label>
-        <span class="small muted">Include snapshots &amp; pre-releases</span>
-      </div>
-      <input id="iversion-text" style="display:none" placeholder="e.g. 1.21">
-    </div>
-    <label>Name (letters, numbers, - and _)</label>
-    <input id="iname" placeholder="my-server">
-    <div id="eula-row" style="margin-top:12px; display:flex; gap:12px; align-items:center">
-      <label class="toggle">
-        <input type="checkbox" id="ieula">
-        <span class="tslot"></span>
-        <span class="tknob"></span>
-        <span class="tlabel on">ON</span>
-        <span class="tlabel off">OFF</span>
-      </label>
-      <span>I accept the <a href="https://www.minecraft.net/en-us/eula" target="_blank">Minecraft EULA</a></span>
-    </div>
-    <div style="margin-top:14px"><button class="arcade amber" id="install-btn" style="padding:12px 26px">INSTALL</button></div>
-  </div>
 
-  <div class="card screws" id="job-card" style="display:none">
-    <h3><span class="lamp on-amber"></span>Install progress</h3>
-    <div class="logbox" id="job-log"></div>
-  </div>
+<main class="max-w-4xl mx-auto p-4 sm:p-6 space-y-4">
+<div id="err" class="text-neon-crimson font-mono text-sm"></div>
 
-  <div class="card screws">
-    <h2>Recent installs</h2>
-    <table><thead><tr><th>Name</th><th>Type</th><th>Version</th><th>Status</th><th></th></tr></thead>
-    <tbody id="jobs-body"></tbody></table>
-  </div>
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
+<h2 class="font-orbitron font-bold tracking-wider text-white mb-4">NEW SERVER</h2>
+<label>Server type</label>
+<select id="itype"></select>
+<div id="version-row">
+<label>Version</label>
+<select id="iversion"></select>
+<div class="mt-3 flex gap-3 items-center">
+<label class="toggle"><input type="checkbox" id="isnap"><span class="tslot"></span><span class="tknob"></span></label>
+<span class="small muted">Include snapshots &amp; pre-releases</span>
+</div>
+<input id="iversion-text" style="display:none" placeholder="e.g. 1.21" class="mt-2">
+</div>
+<label>Name (letters, numbers, - and _)</label>
+<input id="iname" placeholder="my-server">
+<div id="eula-row" class="mt-3 flex gap-3 items-center">
+<label class="toggle"><input type="checkbox" id="ieula"><span class="tslot"></span><span class="tknob"></span></label>
+<span class="text-sm">I accept the <a href="https://www.minecraft.net/en-us/eula" target="_blank" class="text-neon-cyan hover:underline">Minecraft EULA</a></span>
+</div>
+<div class="mt-4"><button id="install-btn" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider px-6 py-3 rounded-sm clip-tech-chamfer">INSTALL</button></div>
+</div>
 
-  <div class="card screws">
-    <h2>Import existing</h2>
-    <p class="small muted">Point the panel at a directory that already has a server jar. Files stay where they are.</p>
-    <div class="form-row">
-      <div><label>Name</label><input id="imp-name" placeholder="my-server"></div>
-      <div><label>Directory (absolute path on this machine)</label><input id="imp-dir" placeholder="/opt/minecraft/my-server"></div>
-    </div>
-    <div style="margin-top:12px"><button class="arcade amber" id="import-btn" style="padding:10px 22px">IMPORT</button>
-    <span class="small muted" id="import-msg"></span></div>
-  </div>
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="job-card" style="display:none">
+<h3 class="font-orbitron font-bold tracking-wider text-white mb-3">INSTALL PROGRESS</h3>
+<div class="logbox" id="job-log"></div>
+</div>
 
-  <div class="card screws">
-    <h2>Add remote server</h2>
-    <p class="small muted">Manage a server running on another machine over RCON. The panel won't start, stop, or read files for it — just status, players, TPS, and an RCON console.</p>
-    <div class="form-row">
-      <div><label>Name</label><input id="rem-name" placeholder="my-remote"></div>
-      <div><label>Host</label><input id="rem-host" placeholder="192.168.1.50"></div>
-    </div>
-    <div class="form-row">
-      <div><label>Game port</label><input id="rem-port" placeholder="25570"></div>
-      <div><label>RCON port</label><input id="rem-rcon" placeholder="25575"></div>
-    </div>
-    <div class="form-row">
-      <div><label>RCON password</label><input id="rem-pw" type="password"></div>
-      <div><label>Query port (optional)</label><input id="rem-query" placeholder=""></div>
-    </div>
-    <div style="margin-top:12px"><button class="arcade amber" id="remote-btn" style="padding:10px 22px">ADD REMOTE</button>
-    <span class="small muted" id="remote-msg"></span></div>
-  </div>
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
+<h2 class="font-orbitron font-bold tracking-wider text-white mb-4">RECENT INSTALLS</h2>
+<table><thead><tr><th>Name</th><th>Type</th><th>Version</th><th>Status</th><th></th></tr></thead>
+<tbody id="jobs-body"></tbody></table>
+</div>
 
-  <p class="error" id="err"></p>
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
+<h2 class="font-orbitron font-bold tracking-wider text-white mb-2">IMPORT EXISTING</h2>
+<p class="small muted mb-4">Point the panel at a directory that already has a server jar. Files stay where they are.</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div><label>Name</label><input id="imp-name" placeholder="my-server"></div>
+<div><label>Directory (absolute path)</label><input id="imp-dir" placeholder="/opt/minecraft/my-server"></div>
+</div>
+<div class="mt-4 flex items-center gap-3">
+<button id="import-btn" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer">IMPORT</button>
+<span class="small muted" id="import-msg"></span>
+</div>
+</div>
+
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
+<h2 class="font-orbitron font-bold tracking-wider text-white mb-2">ADD REMOTE SERVER</h2>
+<p class="small muted mb-4">Manage a server running on another machine over RCON. The panel won't start, stop, or read files for it — just status, players, TPS, and an RCON console.</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div><label>Name</label><input id="rem-name" placeholder="my-remote"></div>
+<div><label>Host</label><input id="rem-host" placeholder="192.168.1.50"></div>
+<div><label>Game port</label><input id="rem-port" placeholder="25570"></div>
+<div><label>RCON port</label><input id="rem-rcon" placeholder="25575"></div>
+<div><label>RCON password</label><input id="rem-pw" type="password"></div>
+<div><label>Query port (optional)</label><input id="rem-query" placeholder=""></div>
+</div>
+<div class="mt-4 flex items-center gap-3">
+<button id="remote-btn" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer">ADD REMOTE</button>
+<span class="small muted" id="remote-msg"></span>
+</div>
+</div>
 </main>
+
 <script src="/static/app.js?v=2"></script>
 <script>
 let types = [];
-
 async function loadTypes() {
   const r = await api("GET", "/api/installer/types");
   types = r.types;
@@ -109,12 +175,11 @@ async function loadTypes() {
   onTypeChange();
   document.getElementById("isnap").onchange = onTypeChange;
 }
-
 async function onTypeChange() {
   const t = types.find(x => x.id === document.getElementById("itype").value);
   const sel = document.getElementById("iversion");
   const txt = document.getElementById("iversion-text");
-  document.getElementById("eula-row").style.display = t.id === "velocity" ? "none" : "block";
+  document.getElementById("eula-row").style.display = t.id === "velocity" ? "none" : "flex";
   if (t.needs_version_input) {
     sel.style.display = "none"; txt.style.display = "block";
     txt.placeholder = t.version_hint || "version";
@@ -129,7 +194,6 @@ async function onTypeChange() {
     } catch (e) { sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`; }
   }
 }
-
 document.getElementById("install-btn").onclick = async () => {
   const err = document.getElementById("err");
   err.textContent = "";
@@ -148,7 +212,6 @@ document.getElementById("install-btn").onclick = async () => {
     loadJobs();
   } catch (e) { err.textContent = e.message; }
 };
-
 function watchJob(id) {
   const card = document.getElementById("job-card");
   const log = document.getElementById("job-log");
@@ -156,15 +219,16 @@ function watchJob(id) {
   log.textContent = "";
   const es = new EventSource(`/api/installer/jobs/${id}/stream`);
   es.onmessage = (e) => {
-    try {
-      const d = JSON.parse(e.data);
-      log.textContent += d.line + "\n";
-    } catch { log.textContent += e.data + "\n"; }
+    try { const d = JSON.parse(e.data); log.textContent += d.line + "\n"; }
+    catch { log.textContent += e.data + "\n"; }
     log.scrollTop = log.scrollHeight;
   };
   es.addEventListener("done", () => { es.close(); loadJobs(); });
 }
-
+function lamp(color) {
+  const c = color === "green" ? "#00ff88" : color === "red" ? "#ff2a5f" : "#ff9900";
+  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:6px"></span>`;
+}
 async function loadJobs() {
   const body = document.getElementById("jobs-body");
   try {
@@ -180,7 +244,6 @@ async function loadJobs() {
     body.querySelectorAll("[data-watch]").forEach(b => b.onclick = () => watchJob(b.dataset.watch));
   } catch (e) { body.innerHTML = `<tr><td colspan="5" class="error">${esc(e.message)}</td></tr>`; }
 }
-
 document.getElementById("import-btn").onclick = async () => {
   const msg = document.getElementById("import-msg");
   msg.textContent = "importing…";
@@ -192,7 +255,6 @@ document.getElementById("import-btn").onclick = async () => {
     msg.textContent = "imported — see the dashboard";
   } catch (e) { msg.textContent = "error: " + e.message; }
 };
-
 document.getElementById("remote-btn").onclick = async () => {
   const msg = document.getElementById("remote-msg");
   msg.textContent = "adding…";
@@ -214,7 +276,6 @@ document.getElementById("remote-btn").onclick = async () => {
     msg.textContent = "added — see the dashboard";
   } catch (e) { msg.textContent = "error: " + e.message; }
 };
-
 loadTypes();
 loadJobs();
 setInterval(loadJobs, 10000);
