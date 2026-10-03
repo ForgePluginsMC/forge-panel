@@ -203,6 +203,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 /* vanilla-style inventory layout */
 .mc-inv { width: 100%; max-width: 100%; overflow: hidden; }
 .mc-armor-row { display: grid; grid-template-columns: 52px 80px 52px; gap: 8px; align-items: start; justify-content: start; }
+.mc-armor-col.offhand-col { align-self: center; }
 .mc-armor-col { display: grid; gap: 4px; }
 .mc-armor-col .inv-slot { width: 52px; height: 52px; min-height: 52px; }
 .mc-char { width: 80px; height: 112px; image-rendering: pixelated; background: rgba(8, 11, 20, 0.85); border: 1px solid var(--line); object-fit: contain; }
