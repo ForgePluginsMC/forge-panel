@@ -137,7 +137,11 @@
     select option {
       background: #09111c !important; color: #e2e8f0 !important;
     }
-    input[type="text"], input[type="number"], input:not([type]) {
+    input[type="text"], input[type="number"], input:not([type]),
+    #file-modal input, #file-smart input, #plugin-modal-body select, #plugin-modal-body input {
+      background: #050b12 !important; border: 1px solid #234468 !important; color: #e2e8f0 !important;
+    }
+    #file-modal select, #file-smart select {
       background: #050b12 !important; border: 1px solid #234468 !important; color: #e2e8f0 !important;
     }
     select:focus { outline: none; border-color: #00f0ff; }
