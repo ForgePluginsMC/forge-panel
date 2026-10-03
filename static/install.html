@@ -268,11 +268,11 @@ document.getElementById("install-btn").onclick = async () => {
   if (!name) { err.textContent = "give the server a name"; return; }
   try {
     const r = await api("POST", "/api/installer/install", { type, version, name, eula });
-    watchJob(r.job_id);
+    watchJob(r.job_id, name);
     loadJobs();
   } catch (e) { err.textContent = e.message; }
 };
-function watchJob(id) {
+function watchJob(id, serverName) {
   const card = document.getElementById("job-card");
   const log = document.getElementById("job-log");
   card.style.display = "block";
@@ -283,7 +283,16 @@ function watchJob(id) {
     catch { log.textContent += e.data + "\n"; }
     log.scrollTop = log.scrollHeight;
   };
-  es.addEventListener("done", () => { es.close(); loadJobs(); });
+  es.addEventListener("done", (e) => {
+    es.close();
+    loadJobs();
+    try {
+      const d = JSON.parse(e.data);
+      if (d.status === "done" && serverName) {
+        setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(serverName); }, 1500);
+      }
+    } catch {}
+  });
 }
 function lamp(color) {
   const c = color === "green" ? "#00ff88" : color === "red" ? "#ff2a5f" : "#ff9900";
