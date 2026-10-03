@@ -1358,6 +1358,7 @@ struct PluginSearchQuery {
     q: Option<String>,
     sort: Option<String>,
     category: Option<String>,
+    project_type: Option<String>,
 }
 
 async fn plugins_modrinth_search(
@@ -1367,11 +1368,13 @@ async fn plugins_modrinth_search(
 ) -> ApiResult<Json<serde_json::Value>> {
     server_or_404(&state, &name)?;
     let sort = q.sort.as_deref().unwrap_or("relevance");
+    let project_type = q.project_type.as_deref().unwrap_or("plugin");
     let (hits, total) = plugins::modrinth_search(
         &state,
         q.q.as_deref().unwrap_or(""),
         sort,
         q.category.as_deref(),
+        project_type,
     )
     .await
     .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
@@ -1381,9 +1384,11 @@ async fn plugins_modrinth_search(
 async fn plugins_modrinth_categories(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
+    Query(q): Query<PluginSearchQuery>,
 ) -> ApiResult<Json<serde_json::Value>> {
     server_or_404(&state, &name)?;
-    let cats = plugins::modrinth_categories(&state)
+    let project_type = q.project_type.as_deref().unwrap_or("plugin");
+    let cats = plugins::modrinth_categories(&state, project_type)
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
     Ok(Json(serde_json::json!({ "categories": cats })))
@@ -1414,9 +1419,11 @@ async fn plugins_spiget_category(
 async fn plugins_modrinth_trending(
     State(state): State<Arc<AppState>>,
     Path(name): Path<String>,
+    Query(q): Query<PluginSearchQuery>,
 ) -> ApiResult<Json<serde_json::Value>> {
     server_or_404(&state, &name)?;
-    let (hits, total) = plugins::modrinth_search(&state, "", "downloads", None)
+    let project_type = q.project_type.as_deref().unwrap_or("plugin");
+    let (hits, total) = plugins::modrinth_search(&state, "", "downloads", None, project_type)
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
     Ok(Json(serde_json::json!({ "hits": hits, "total": total })))

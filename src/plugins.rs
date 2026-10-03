@@ -77,27 +77,35 @@ pub struct ModrinthProject {
     pub categories: Vec<String>,
 }
 
-fn facets_json(category: Option<&str>) -> String {
-    // Only plugins, never mods/modpacks. Optional category facet.
+fn facets_json(project_type: &str, category: Option<&str>) -> String {
+    // Filter by project type. Sanitized to an allowlist.
+    let pt = match project_type {
+        "plugin" | "mod" | "modpack" => project_type,
+        _ => "plugin",
+    };
     match category {
         Some(c) => format!(
-            r#"[["project_type:plugin"],["categories:{}"]]"#,
+            r#"[["project_type:{}"],["categories:{}"]]"#,
+            pt,
             c.replace('"', "")
         ),
-        None => r#"[["project_type:plugin"]]"#.to_string(),
+        None => format!(r#"[["project_type:{}"]]"#, pt),
     }
 }
 
-/// Search Modrinth plugins. `sort`: relevance | downloads | follows | newest | updated.
+/// Search Modrinth. `sort`: relevance | downloads | follows | newest | updated.
 /// `category`: optional Modrinth category slug (e.g. "economy").
+/// `project_type`: plugin | mod | modpack.
 pub async fn modrinth_search(
     state: &Arc<AppState>,
     query: &str,
     sort: &str,
     category: Option<&str>,
+    project_type: &str,
 ) -> Result<(Vec<ModrinthHit>, u64)> {
     let key = format!(
-        "modrinth:search:{}:{}:{}",
+        "modrinth:search:{}:{}:{}:{}",
+        project_type,
         sort,
         query,
         category.unwrap_or("-")
@@ -109,7 +117,7 @@ pub async fn modrinth_search(
         url,
         urlencode(query),
         urlencode(sort),
-        urlencode(&facets_json(category))
+        urlencode(&facets_json(project_type, category))
     );
     let body = state
         .cached_get(&key, CACHE_TTL, &full, MODRINTH_UA)
@@ -118,9 +126,18 @@ pub async fn modrinth_search(
     Ok((resp.hits, resp.total_hits))
 }
 
-/// Live Modrinth category tags (all project types; frontend filters to useful ones).
-pub async fn modrinth_categories(state: &Arc<AppState>) -> Result<Vec<serde_json::Value>> {
-    let key = "modrinth:tag:category".to_string();
+/// Live Modrinth category tags, filtered by project type.
+/// The raw API returns tags for all project types — we keep only the requested
+/// type's categories to avoid the mess of resolution tags (128X), shader tags (PBR), etc.
+pub async fn modrinth_categories(
+    state: &Arc<AppState>,
+    project_type: &str,
+) -> Result<Vec<serde_json::Value>> {
+    let pt = match project_type {
+        "plugin" | "mod" | "modpack" => project_type,
+        _ => "plugin",
+    };
+    let key = format!("modrinth:tag:category:{}", pt);
     let body = state
         .cached_get(
             &key,
@@ -129,7 +146,21 @@ pub async fn modrinth_categories(state: &Arc<AppState>) -> Result<Vec<serde_json
             MODRINTH_UA,
         )
         .await?;
-    serde_json::from_str(&body).context("parsing modrinth categories")
+    let all: Vec<serde_json::Value> =
+        serde_json::from_str(&body).context("parsing modrinth categories")?;
+    // Keep only the requested project type's categories with header "categories".
+    // Deduplicate by name (API has duplicates).
+    let mut seen = std::collections::HashSet::new();
+    let filtered: Vec<serde_json::Value> = all
+        .into_iter()
+        .filter(|c| {
+            let cpt = c.get("project_type").and_then(|v| v.as_str()).unwrap_or("");
+            let header = c.get("header").and_then(|v| v.as_str()).unwrap_or("");
+            let name = c.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            cpt == pt && header == "categories" && seen.insert(name.to_string())
+        })
+        .collect();
+    Ok(filtered)
 }
 
 pub async fn modrinth_project(state: &Arc<AppState>, id: &str) -> Result<ModrinthProject> {
