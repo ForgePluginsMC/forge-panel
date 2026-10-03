@@ -603,7 +603,7 @@ async fn run_install(state: Arc<AppState>, job_id: &str, req: InstallRequest) ->
     let log = |m: String| state.jobs.push(job_id, m);
 
     // Allocate ports.
-    let (port, rcon_port) = allocate_ports(&state)?;
+    let (port, rcon_port) = allocate_ports(&state, req.port)?;
     log(format!("assigned ports: game {} / rcon {}", port, rcon_port));
 
     let server_dir = state.data_dir.join("servers").join(&req.name);
@@ -722,10 +722,10 @@ fn port_is_free(port: u16) -> bool {
     std::net::TcpListener::bind(("127.0.0.1", port)).is_ok()
 }
 
-fn allocate_ports(state: &Arc<AppState>) -> Result<(u16, u16)> {
+fn allocate_ports(state: &Arc<AppState>, requested: Option<u16>) -> Result<(u16, u16)> {
     let used = state.config.read().unwrap().used_ports();
-    let mut port = req.port.unwrap_or(25565);
-    if req.port.is_none() {
+    let mut port = requested.unwrap_or(25565);
+    if requested.is_none() {
         loop {
             if used.contains(&port) || !port_is_free(port) {
                 port += 1;
@@ -953,7 +953,7 @@ pub async fn import_server(state: Arc<AppState>, req: ImportRequest) -> Result<(
     }
     if port == 0 {
         // No server.properties yet: use requested port or allocate a fresh one.
-        port = req.port.unwrap_or_else(|| allocate_ports(&state).map(|(p, _)| p).unwrap_or(25570));
+        port = req.port.unwrap_or_else(|| allocate_ports(&state, None).map(|(p, _)| p).unwrap_or(25570));
     } else if let Some(p) = req.port {
         port = p;
     }
