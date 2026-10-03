@@ -438,11 +438,11 @@ function invGrid(items, slots, cols) {
   const bySlot = new Map();
   (items || []).forEach(it => { if (it && it.slot !== undefined) bySlot.set(Number(it.slot), it); });
   return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr))">` +
-    slots.map(s => invSlot(bySlot.get(s), SLOT_GHOSTS[s])).join("") + `</div>`;
+    slots.map(s => invSlot(bySlot.get(s), SLOT_GHOSTS[s], s)).join("") + `</div>`;
 }
 
 // Single inventory slot. `ghost` is an optional ghost-icon data URI for empty armor slots.
-function invSlot(it, ghost) {
+function invSlot(it, ghost, slot) {
   let inner = "";
   if (it) {
     const iconName = it.id.replace(/^minecraft:/, "");
@@ -453,7 +453,9 @@ function invSlot(it, ghost) {
   } else if (ghost) {
     inner = `<img class="slot-ghost" src="${ghost}" alt="" draggable="false">`;
   }
-  return `<div class="inv-slot${it ? " filled" : ""}" title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
+  const slotAttr = slot !== undefined ? ` data-slot="${slot}"` : "";
+  const itemAttr = it ? ` data-item-id="${esc(it.id)}"` : "";
+  return `<div class="inv-slot${it ? " filled" : ""}"${slotAttr}${itemAttr} title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
 }
 
 // Vanilla armor slot ghost icons (pixel art extracted from the client).
@@ -519,10 +521,10 @@ function playerModalHTML(info) {
   <div class="mc-inv">
     <div class="mc-main">
       <div class="mc-armor-col">
-        ${invSlot(bySlotInv.get(103), null)}
-        ${invSlot(bySlotInv.get(102), null)}
-        ${invSlot(bySlotInv.get(101), null)}
-        ${invSlot(bySlotInv.get(100), null)}
+        ${invSlot(bySlotInv.get(103), null, 103)}
+        ${invSlot(bySlotInv.get(102), null, 102)}
+        ${invSlot(bySlotInv.get(101), null, 101)}
+        ${invSlot(bySlotInv.get(100), null, 100)}
       </div>
       <div class="mc-grids">
         ${invGrid(info.inventory, range(9, 35), 9)}
@@ -531,7 +533,7 @@ function playerModalHTML(info) {
       </div>
     </div>
     <div class="mc-sub">
-      ${invSlot(bySlotInv.get(-106), null)}
+      ${invSlot(bySlotInv.get(-106), null, -106)}
       <button class="inv-slot inv-delete" data-act="clear" title="Delete entire inventory">✕</button>
     </div>
   </div>
@@ -605,6 +607,159 @@ function bindPlayerActions() {
     }
     else if (a === "clear") { if (confirm(`Delete ALL items in ${n}'s inventory?`)) pcmd(`clear ${n}`); }
   });
+
+  // Item slot interactions: click to select (ember outline only on selected),
+  // then choose Delete/Move/Repair from context menu.
+  bindInventorySlots(n);
+}
+
+// Currently selected inventory slot (NBT slot number), or null.
+let selectedInvSlot = null;
+// Item ID of selected slot, for the context menu label.
+let selectedItemId = null;
+// Move mode: when true, clicking a target slot performs the move/swap.
+let moveMode = false;
+
+function clearSlotSelection() {
+  document.querySelectorAll("#player-modal-body .inv-slot.selected").forEach(el => el.classList.remove("selected"));
+  selectedInvSlot = null;
+  selectedItemId = null;
+  moveMode = false;
+  closeContextMenu();
+}
+
+function closeContextMenu() {
+  document.querySelectorAll(".inv-context-menu").forEach(el => el.remove());
+}
+
+function isDamageable(itemId) {
+  // Armor, tools, weapons — items that can take damage.
+  const damageable = [
+    "_helmet", "_chestplate", "_leggings", "_boots",
+    "_sword", "_axe", "_pickaxe", "_shovel", "_hoe",
+    "bow", "crossbow", "trident", "mace", "shield",
+    "elytra", "fishing_rod", "shears", "flint_and_steel",
+    "brush", "carrot_on_a_stick", "warped_fungus_on_a_stick"
+  ];
+  return damageable.some(suffix => itemId.endsWith(suffix));
+}
+
+function showItemContextMenu(x, y, itemId, slot) {
+  closeContextMenu();
+  const menu = document.createElement("div");
+  menu.className = "inv-context-menu";
+  menu.innerHTML = `<div class="menu-label">${esc(prettyItem(itemId))}</div>`;
+  
+  const addBtn = (label, danger, onclick) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    if (danger) b.className = "danger";
+    b.onclick = (e) => { e.stopPropagation(); onclick(); };
+    menu.appendChild(b);
+  };
+  
+  addBtn("Move…", false, () => {
+    closeContextMenu();
+    moveMode = true;
+    // Keep the selection outline; user clicks target slot next.
+  });
+  
+  if (isDamageable(itemId)) {
+    addBtn("Repair", false, async () => {
+      closeContextMenu();
+      try {
+        await api("POST", `/api/servers/${enc}/player/${encodeURIComponent(curPlayer)}/inventory/action`, {
+          action: "repair",
+          from_slot: slot
+        });
+        clearSlotSelection();
+        openPlayer(curPlayer, true); // refresh
+      } catch (e) {
+        alert("Repair failed: " + e.message);
+      }
+    });
+  }
+  
+  addBtn("Delete", true, async () => {
+    closeContextMenu();
+    if (!confirm(`Delete ${prettyItem(itemId)}?`)) return;
+    try {
+      await api("POST", `/api/servers/${enc}/player/${encodeURIComponent(curPlayer)}/inventory/action`, {
+        action: "delete",
+        from_slot: slot
+      });
+      clearSlotSelection();
+      openPlayer(curPlayer, true); // refresh
+    } catch (e) {
+      alert("Delete failed: " + e.message);
+    }
+  });
+  
+  menu.style.left = Math.min(x, window.innerWidth - 180) + "px";
+  menu.style.top = Math.min(y, window.innerHeight - 150) + "px";
+  document.body.appendChild(menu);
+  
+  // Close menu when clicking elsewhere.
+  const closeOnClick = (e) => {
+    if (!menu.contains(e.target)) {
+      closeContextMenu();
+      document.removeEventListener("click", closeOnClick);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeOnClick), 10);
+}
+
+function bindInventorySlots(playerName) {
+  const body = document.getElementById("player-modal-body");
+  if (!body) return;
+  
+  body.querySelectorAll(".inv-slot[data-slot]").forEach(slotEl => {
+    slotEl.onclick = (e) => {
+      e.stopPropagation();
+      const slot = parseInt(slotEl.dataset.slot, 10);
+      const itemId = slotEl.dataset.itemId;
+      
+      // Move mode: clicking a target slot performs the move/swap.
+      if (moveMode && selectedInvSlot !== null && selectedInvSlot !== slot) {
+        const fromSlot = selectedInvSlot;
+        (async () => {
+          try {
+            const result = await api("POST", `/api/servers/${enc}/player/${encodeURIComponent(playerName)}/inventory/action`, {
+              action: "move",
+              from_slot: fromSlot,
+              to_slot: slot
+            });
+            clearSlotSelection();
+            openPlayer(playerName, true); // refresh
+          } catch (err) {
+            alert("Move failed: " + err.message);
+          }
+        })();
+        return;
+      }
+      
+      // Normal click: select if it has an item, deselect otherwise.
+      // Only ONE slot gets the ember outline at a time.
+      document.querySelectorAll("#player-modal-body .inv-slot.selected").forEach(el => el.classList.remove("selected"));
+      
+      if (itemId) {
+        slotEl.classList.add("selected");
+        selectedInvSlot = slot;
+        selectedItemId = itemId;
+        moveMode = false;
+        showItemContextMenu(e.clientX, e.clientY, itemId, slot);
+      } else {
+        clearSlotSelection();
+      }
+    };
+  });
+  
+  // Clicking outside slots clears selection.
+  body.onclick = (e) => {
+    if (!e.target.closest(".inv-slot") && !e.target.closest(".inv-context-menu")) {
+      clearSlotSelection();
+    }
+  };
 }
 
 async function openPlayer(name, quiet) {

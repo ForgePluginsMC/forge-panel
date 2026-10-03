@@ -197,7 +197,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 .inv-slot { aspect-ratio: 1; min-height: 38px; border: 1px solid var(--line); background: rgba(8, 11, 20, 0.85); position: relative; padding: 2px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .inv-slot .inv-item { font-size: 10.5px; line-height: 1.25; color: var(--text); display: block; word-break: break-word; }
 .inv-slot .inv-count { position: absolute; right: 4px; bottom: 2px; font-family: var(--font-m); font-size: 12px; font-weight: 700; color: var(--ember-hi); text-shadow: 0 0 6px rgba(255, 123, 47, 0.7); }
-.inv-slot.filled { border-color: var(--ember); box-shadow: inset 0 0 12px rgba(255, 123, 47, 0.15); flex-direction: column; gap: 2px; }
+.inv-slot.filled { border-color: var(--ember); box-shadow: inset 0 0 12px rgba(255, 123, 47, 0.15); flex-direction: column; gap: 2px; cursor: pointer; }
+.inv-slot.selected { border-color: var(--ember-hi) !important; box-shadow: 0 0 0 2px var(--ember-hi), 0 0 16px rgba(255, 123, 47, 0.6) !important; z-index: 10; }
 .inv-slot .inv-icon { width: 52%; height: 52%; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
 .inv-slot .inv-item { font-size: 9px; line-height: 1.2; color: var(--text); display: block; word-break: break-word; text-align: center; max-height: 2.4em; overflow: hidden; }
 /* vanilla-style inventory layout */
@@ -550,4 +551,24 @@ a.backend-chip:hover { border-color: var(--cyan); color: #fff; filter: drop-shad
   header.top h1 { font-size: 14px; letter-spacing: 2px; }
   .grid { grid-template-columns: 1fr; }
   #console-log { height: 340px; }
+}
+
+/* Item context menu */
+.inv-context-menu {
+  position: fixed; z-index: 1000; min-width: 160px;
+  background: rgba(10, 13, 22, 0.98); border: 1px solid var(--ember);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8), 0 0 12px rgba(255, 123, 47, 0.3);
+  border-radius: 4px; padding: 4px; font-family: var(--font-b);
+}
+.inv-context-menu button {
+  display: block; width: 100%; text-align: left; padding: 8px 12px;
+  background: none; border: none; color: var(--text); font-size: 13px;
+  cursor: pointer; border-radius: 3px; font-family: var(--font-b);
+}
+.inv-context-menu button:hover { background: rgba(255, 123, 47, 0.15); color: var(--ember-hi); }
+.inv-context-menu button.danger:hover { background: rgba(255, 60, 60, 0.15); color: #ff6b6b; }
+.inv-context-menu .menu-label {
+  padding: 6px 12px; font-size: 11px; color: var(--dim);
+  border-bottom: 1px solid var(--line); margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
 }
