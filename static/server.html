@@ -1661,7 +1661,7 @@ function controlHTML(e) {
     case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
     case "enum": {
       const cur = String(e.value).toLowerCase();
-      return `<select ${dl} style="background:#ff0000;border:3px solid #ff0000;color:#ffffff;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
+      return `<select ${dl} style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
         `<option value="${esc(o)}" style="background:#09111c;color:#e2e8f0;"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
     }
     default: return `<input type="text" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">`;
