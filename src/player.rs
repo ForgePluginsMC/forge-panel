@@ -291,13 +291,23 @@ async fn fetch_items(
     path: &str,
     slots: &[i32],
 ) -> Vec<ItemStack> {
+    let mut items = Vec::new();
+    // Armor/offhand slots (100-103, -106) are often missing from the bulk
+    // Inventory fetch — always query them individually.
+    let special: Vec<i32> = slots.iter().copied().filter(|&s| s >= 100 || s < 0).collect();
+    let bulk: Vec<i32> = slots.iter().copied().filter(|&s| !(s >= 100 || s < 0)).collect();
+
     if let Ok(raw) = data_get(pool, host, port, pw, player, path).await {
         if !raw.contains("...") {
-            return parse_items(&raw);
+            items = parse_items(&raw);
         }
     }
-    let mut items = Vec::new();
-    for &slot in slots {
+    // Fill in anything the bulk fetch missed (or if it was truncated).
+    let have: std::collections::HashSet<i32> = items.iter().map(|it| it.slot).collect();
+    for &slot in bulk.iter().chain(special.iter()) {
+        if have.contains(&slot) {
+            continue;
+        }
         let slot_path = format!("{}[{{Slot:{}b}}]", path, slot);
         // Empty slots answer "Found no elements matching..." → Err → skipped.
         if let Ok(raw) = data_get(pool, host, port, pw, player, &slot_path).await {
