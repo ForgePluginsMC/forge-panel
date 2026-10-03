@@ -893,8 +893,9 @@ function appendLine(t) {
   let html = mcToHtml(t);
   // If no color codes were found, apply level-based coloring
   if (html === esc(t)) {
-    // Match: [timestamp] [Thread/LEVEL]: message
-    const m = esc(t).match(/^(\[[^\]]*\])\s*(\[[^\]]*\])\s*:\s?(.*)$/);
+    const e = esc(t);
+    // Format 1: [timestamp] [Thread/LEVEL]: message
+    let m = e.match(/^(\[[^\]]*\])\s*(\[[^\]]*\])\s*:\s?(.*)$/);
     if (m) {
       const ts = '<span style="color:#64748b">' + m[1] + '</span>';
       const tag = m[2];
@@ -908,11 +909,20 @@ function appendLine(t) {
       } else {
         html = ts + ' <span style="color:#94a3b8">' + tag + '</span>: ' + msg;
       }
-    } else if (/Done \(/.test(t)) {
-      html = '<span style="color:#00ff88;font-weight:bold">' + esc(t) + '</span>';
     } else {
-      const m2 = esc(t).match(/^(\[[^\]]*\])(.*)$/);
-      if (m2) html = '<span style="color:#64748b">' + m2[1] + '</span>' + m2[2];
+      // Format 2: [timestamp LEVEL]: message
+      m = e.match(/^(\[[^\]]*\s+(INFO|WARN|ERROR)\])\s*:\s?(.*)$/i);
+      if (m) {
+        const level = m[2].toUpperCase();
+        const color = level === 'WARN' ? '#ff9900' : level === 'ERROR' ? '#ff2a5f' : '#00f0ff';
+        const weight = level === 'INFO' ? '' : ';font-weight:bold';
+        html = '<span style="color:' + color + weight + '">' + m[1] + '</span>: ' + m[3];
+      } else if (/Done \(/.test(t)) {
+        html = '<span style="color:#00ff88;font-weight:bold">' + e + '</span>';
+      } else {
+        const m2 = e.match(/^(\[[^\]]*\])(.*)$/);
+        if (m2) html = '<span style="color:#64748b">' + m2[1] + '</span>' + m2[2];
+      }
     }
   }
   div.innerHTML = html;
