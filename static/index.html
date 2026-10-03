@@ -1,48 +1,137 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>forge-panel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css?v=2">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FORGE-PANEL // Host Node Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: {
+    colors: { cyber: {
+      void: '#04070d', bg: '#080c14', surface: '#0d131f', panel: 'rgba(13,20,33,.75)',
+      border: '#1b2a42', cyan: '#00F0FF', cyanDim: '#00a3ad', amber: '#FF9900',
+      amberDim: '#c47100', crimson: '#FF2A55', crimsonDim: '#99142e',
+      emerald: '#10B981', textMuted: '#64748b'
+    } },
+    fontFamily: {
+      display: ['Orbitron','sans-serif'], ui: ['Rajdhani','sans-serif'], mono: ['JetBrains Mono','monospace']
+    }
+  } }
+};
+</script>
+<style>
+body { background-color:#080c14; background-image:linear-gradient(to right,rgba(0,240,255,.03) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,240,255,.03) 1px,transparent 1px); background-size:32px 32px; background-attachment:fixed; }
+.corner-brackets { position:relative; }
+.corner-brackets::before { content:''; position:absolute; top:-2px; left:-2px; width:14px; height:14px; border-top:2px solid #FF9900; border-left:2px solid #FF9900; pointer-events:none; filter:drop-shadow(0 0 4px #FF9900); }
+.corner-brackets::after { content:''; position:absolute; bottom:-2px; right:-2px; width:14px; height:14px; border-bottom:2px solid #FF9900; border-right:2px solid #FF9900; pointer-events:none; filter:drop-shadow(0 0 4px #FF9900); }
+.corner-brackets-cyan::before { content:''; position:absolute; top:-2px; left:-2px; width:12px; height:12px; border-top:2px solid #00F0FF; border-left:2px solid #00F0FF; pointer-events:none; }
+.corner-brackets-cyan::after { content:''; position:absolute; bottom:-2px; right:-2px; width:12px; height:12px; border-bottom:2px solid #00F0FF; border-right:2px solid #00F0FF; pointer-events:none; }
+.sci-btn-amber { clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); background:linear-gradient(135deg,#FF9900 0%,#D87700 100%); color:#04070d; font-weight:700; letter-spacing:.08em; transition:all .15s; }
+.sci-btn-amber:hover { box-shadow:0 0 16px rgba(255,153,0,.6); transform:translateY(-1px); }
+.sci-btn-crimson { clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); background:linear-gradient(135deg,#FF2A55 0%,#BA1037 100%); color:#fff; font-weight:700; letter-spacing:.08em; transition:all .15s; }
+.sci-btn-crimson:hover { box-shadow:0 0 16px rgba(255,42,85,.65); transform:translateY(-1px); }
+.sci-btn-cyan { clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px)); background:rgba(0,240,255,.08); border:1px solid #00F0FF; color:#00F0FF; transition:all .15s; }
+.sci-btn-cyan:hover { background:rgba(0,240,255,.22); box-shadow:0 0 14px rgba(0,240,255,.4); }
+.sci-btn-green { clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px)); background:rgba(16,185,129,.12); border:1px solid #10B981; color:#10B981; transition:all .15s; }
+.sci-btn-green:hover { background:rgba(16,185,129,.25); box-shadow:0 0 14px rgba(16,185,129,.4); }
+</style>
 </head>
-<body>
-<header class="top">
-  <h1><span class="flame">🔥</span> forge-panel</h1>
-  <nav>
-    <a href="/">Dashboard</a>
-    <a href="/install">Install</a>
-    <button onclick="logout()">Logout</button>
-  </nav>
-</header>
-<main>
-  <div class="card screws" id="sysram" style="display:none">
-    <h3 style="margin:0 0 4px">System RAM</h3>
-    <div class="rack-row">
-      <div id="sysram-gauge"></div>
-      <div>
-        <div class="rack-label">Allocation</div>
-        <div id="sysram-led"></div>
-        <div class="small muted" id="sysram-text" style="margin-top:6px"></div>
+<body class="text-slate-200 font-ui min-h-screen flex flex-col">
+<header class="border-b border-cyber-border/80 bg-cyber-void/80 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center space-x-6">
+      <a class="flex items-center space-x-3" href="#">
+        <div class="w-9 h-9 flex items-center justify-center bg-gradient-to-tr from-amber-600/30 to-red-600/20 border border-cyber-amber/60 rounded-sm">
+          <span class="text-cyber-amber text-xl">🔥</span>
+        </div>
+        <h1 class="font-display font-black text-xl lg:text-2xl tracking-wider text-slate-100">FORGE<span class="text-cyber-amber">-PANEL</span></h1>
+      </a>
+      <div class="hidden sm:flex items-center space-x-2 px-3 py-1 bg-cyber-surface/90 border border-emerald-500/30 rounded text-xs font-mono">
+        <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+        <span class="text-emerald-400 tracking-wider">SYSTEM OPERATIONAL</span>
       </div>
     </div>
+    <nav class="flex items-center space-x-1.5 text-xs md:text-sm font-display uppercase tracking-wider">
+      <a class="px-3.5 py-1.5 bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/60 rounded-sm font-semibold" href="/">Dashboard</a>
+      <a class="px-3 py-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-sm transition" href="/install">Install</a>
+      <button class="ml-2 px-3.5 py-1.5 text-xs font-mono text-cyber-crimson hover:text-white border border-cyber-crimson/40 hover:bg-cyber-crimson rounded-sm transition" onclick="logout()">Logout</button>
+    </nav>
   </div>
+</header>
 
-  <div class="card screws" id="topology-card" style="display:none">
-    <h3>Network topology</h3>
-    <div class="topology" id="topology"></div>
-  </div>
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+  <!-- System Metrics -->
+  <section class="relative bg-cyber-panel/90 border border-cyber-border rounded-sm p-5 md:p-6 corner-brackets">
+    <div class="flex flex-wrap items-center justify-between pb-4 mb-4 border-b border-cyber-border/70">
+      <div class="flex items-center space-x-2">
+        <div class="w-1.5 h-4 bg-cyber-amber"></div>
+        <h2 class="font-display font-bold text-base md:text-lg tracking-wider text-slate-100">SYSTEM HOST METRICS <span class="text-cyber-cyan font-mono text-xs ml-2">[HOST]</span></h2>
+      </div>
+      <div class="text-xs font-mono text-slate-400"><span id="sys-uptime"></span></div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      <div class="lg:col-span-4 flex flex-col items-center p-3 bg-cyber-surface/60 border border-slate-800/80 rounded">
+        <div class="text-center">
+          <span id="sys-ram-num" class="font-mono font-bold text-cyber-amber text-2xl tracking-wider">—</span>
+          <p class="text-[10px] uppercase font-mono tracking-widest text-slate-400">RAM Allocated</p>
+        </div>
+        <div class="mt-2 text-xs font-mono text-slate-400 flex justify-between w-full px-4">
+          <span>0 GB</span><span id="sys-ram-pct" class="text-cyber-cyan font-bold">—</span><span id="sys-ram-total">—</span>
+        </div>
+        <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden mx-4"><div id="sys-ram-bar" class="bg-gradient-to-r from-cyber-cyan to-cyber-amber h-full" style="width:0%"></div></div>
+      </div>
+      <div class="lg:col-span-8">
+        <div class="text-xs font-mono mb-2 flex justify-between"><span class="text-slate-300 font-bold uppercase tracking-wider">Allocation</span><span id="sys-ram-text" class="text-cyber-cyan"></span></div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Servers</span><span id="stat-servers" class="font-mono text-lg font-bold text-slate-100">—</span></div>
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Running</span><span id="stat-running" class="font-mono text-lg font-bold text-emerald-400">—</span></div>
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Players</span><span id="stat-players" class="font-mono text-lg font-bold text-cyber-cyan">—</span></div>
+          <div class="p-2.5 bg-cyber-surface/60 border border-slate-800 rounded"><span class="text-[10px] font-mono text-slate-400 uppercase block">Ports</span><span id="stat-ports" class="font-mono text-lg font-bold text-slate-100">—</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <h2>Servers</h2>
-  <div class="grid" id="servers"></div>
-  <p class="error" id="err"></p>
+  <!-- Network Topology -->
+  <section id="topology-card" class="relative bg-cyber-panel/90 border border-cyber-border rounded-sm p-4 md:p-5 corner-brackets" style="display:none">
+    <div class="flex items-center justify-between mb-3.5">
+      <div class="flex items-center space-x-2"><div class="w-1.5 h-3.5 bg-cyber-cyan"></div><h2 class="font-display font-bold text-sm md:text-base tracking-wider">NETWORK TOPOLOGY & PORT BINDINGS</h2></div>
+    </div>
+    <div id="topology" class="flex flex-wrap items-center gap-3"></div>
+  </section>
+
+  <!-- Servers -->
+  <section class="space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-2">
+        <div class="w-2 h-5 bg-cyber-amber"></div>
+        <h2 class="font-display font-black text-lg md:text-xl tracking-wider uppercase">Servers & Runtime Instances</h2>
+        <span id="active-badge" class="px-2 py-0.5 bg-cyber-amber/20 text-cyber-amber text-xs font-mono font-bold border border-cyber-amber/40 rounded">—</span>
+      </div>
+      <a href="/install" class="px-4 py-2 font-display text-xs uppercase tracking-wider text-cyber-cyan border border-cyber-cyan/60 bg-cyber-cyan/10 hover:bg-cyber-cyan/20 rounded-sm transition flex items-center space-x-2"><span>+ Deploy New Server</span></a>
+    </div>
+    <div id="servers" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+    <p class="text-cyber-crimson font-mono text-sm" id="err"></p>
+  </section>
 </main>
+
+<footer class="mt-auto border-t border-cyber-border/70 bg-cyber-void/90 py-3.5 px-4 text-xs font-mono text-slate-500">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <span>FORGE-PANEL DAEMON <strong class="text-slate-300">v3.8.4</strong></span>
+    <span class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>WS-STREAM: SYNCHRONIZED</span></span>
+  </div>
+</footer>
+
 <script src="/static/app.js?v=2"></script>
 <script>
-let sysGauge = null;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtMB = mb => mb >= 1024 ? (mb/1024).toFixed(1) + " GB" : Math.round(mb) + " MB";
+
 async function load() {
   const err = document.getElementById("err");
   try {
@@ -52,34 +141,32 @@ async function load() {
       api("GET", "/api/topology"),
     ]);
 
-    // System RAM gauge + LED bar
+    // System metrics
     if (sys.ram_total_mb) {
-      document.getElementById("sysram").style.display = "block";
-      if (!sysGauge) sysGauge = makeGauge(document.getElementById("sysram-gauge"),
-        { label: "RAM allocated", unit: "MB", min: 0, max: sys.ram_total_mb, redline: sys.ram_total_mb * 0.9 });
-      sysGauge.set(sys.ram_allocated_mb);
-      ledBar(document.getElementById("sysram-led"), sys.ram_allocated_mb / sys.ram_total_mb, 24);
-      let note = `${fmtMB(sys.ram_allocated_mb)} allocated of ${fmtMB(sys.ram_total_mb)}`;
-      if (!sys.ram_allocated_complete) note += " (some running servers have no Xmx set — lower bound)";
-      if (sys.ram_allocated_mb > sys.ram_total_mb) note += " — OVERALLOCATED";
-      document.getElementById("sysram-text").textContent = note;
+      const pct = sys.ram_allocated_mb / sys.ram_total_mb * 100;
+      document.getElementById("sys-ram-num").textContent = fmtMB(sys.ram_allocated_mb).toUpperCase();
+      document.getElementById("sys-ram-pct").textContent = pct.toFixed(1) + "% COMMITTED";
+      document.getElementById("sys-ram-total").textContent = fmtMB(sys.ram_total_mb).toUpperCase();
+      document.getElementById("sys-ram-bar").style.width = Math.min(100, pct) + "%";
+      document.getElementById("sys-ram-text").textContent = fmtMB(sys.ram_allocated_mb) + " allocated of " + fmtMB(sys.ram_total_mb);
     }
+    const running = servers.filter(s => s.running);
+    document.getElementById("stat-servers").textContent = servers.length;
+    document.getElementById("stat-running").textContent = running.length;
+    document.getElementById("stat-players").textContent = servers.reduce((a, s) => a + (s.players_online || 0), 0);
+    document.getElementById("stat-ports").textContent = servers.length;
+    document.getElementById("active-badge").textContent = running.length + " ACTIVE";
 
     // Topology
     const tcard = document.getElementById("topology-card");
     if (topo.proxies.length || topo.standalone.length) {
       tcard.style.display = "block";
       let html = "";
-      for (const p of topo.proxies) {
-        html += `<div class="proxy-box">${lamp(p.running ? "green" : "red")}<strong>${esc(p.name)}</strong> <span class="muted small">:${p.port}</span><div>`;
-        for (const b of p.backends) {
-          html += `<a class="backend-chip" href="/server/${encodeURIComponent(b.name)}">${lamp(b.running ? "green" : "red")}${esc(b.name)} :${b.port}</a>`;
-        }
-        if (!p.backends.length) html += `<div class="small muted">no backends linked</div>`;
-        html += `</div></div>`;
-      }
       for (const s of topo.standalone) {
-        html += `<div><a class="backend-chip" href="/server/${encodeURIComponent(s.name)}">${lamp(s.running ? "green" : "red")}${esc(s.name)} :${s.port}</a></div>`;
+        html += `<a href="/server/${encodeURIComponent(s.name)}" class="flex items-center space-x-3 px-4 py-2 bg-cyber-surface border border-slate-700/80 rounded hover:border-cyber-cyan transition-colors">`
+          + `<span class="w-3 h-3 rounded-full ${s.running ? "bg-emerald-500" : "bg-slate-600"}"></span>`
+          + `<span class="font-mono text-sm"><span class="text-slate-100 font-semibold">${esc(s.name)}</span> <span class="text-cyber-amber font-bold">:${s.port}</span></span>`
+          + `<span class="text-[10px] font-mono ${s.running ? "text-emerald-400" : "text-slate-500"}">${s.running ? "ONLINE" : "OFFLINE"}</span></a>`;
       }
       document.getElementById("topology").innerHTML = html;
     }
@@ -87,39 +174,51 @@ async function load() {
     // Server cards
     const grid = document.getElementById("servers");
     grid.innerHTML = servers.map(s => {
-      const mem = s.running && s.memory_mb != null
-        ? `<div><span class="seg-label">RAM</span><br><span class="seg">${s.memory_mb}</span> <span class="muted small">MB${s.xmx_mb ? " / " + s.xmx_mb : ""}</span></div>` : "";
-      const players = s.players_online != null
-        ? `<div><span class="seg-label">Players</span><br><span class="seg">${s.players_online}</span> <span class="muted small">/ ${s.players_max != null ? s.players_max : "?"}</span></div>` : "";
-      const stats = (players || mem) ? `<div class="stat-row">${players}${mem}</div>` : "";
-      const geyser = s.geyser && s.geyser.installed
-        ? `<span class="badge geyser">geyser${s.geyser.bedrock_port ? " :" + s.geyser.bedrock_port : ""}</span>` : "";
-      const role = s.role === "proxy" ? `<span class="badge proxy">proxy</span>` : "";
-      const remote = s.remote ? `<span class="badge remote">remote</span>` : "";
-      const ram = (s.xms_mb || s.xmx_mb) && !s.running
-        ? `<div class="small muted">Xms ${s.xms_mb || "—"} / Xmx ${s.xmx_mb || "—"} MB</div>` : "";
+      const dot = s.running
+        ? `<span class="w-4 h-4 rounded-full bg-emerald-500" style="box-shadow:0 0 12px rgba(16,185,129,.5)"></span><span class="absolute w-6 h-6 rounded-full bg-emerald-500/40 animate-ping"></span>`
+        : `<span class="w-3.5 h-3.5 rounded-full bg-slate-600"></span>`;
+      const players = s.players_online ?? 0, pmax = s.players_max ?? "?";
+      const memMB = s.running && s.memory_mb != null ? s.memory_mb : 0;
+      const memMax = s.xmx_mb || 0;
+      const memPct = memMax ? Math.min(100, memMB / memMax * 100) : 0;
+      const tps = s.tps != null ? `TPS ${s.tps.toFixed(1)}` : "";
       const actions = s.remote
-        ? `<span class="small muted">managed on ${esc(s.host || "remote host")} — start/stop there</span>`
+        ? `<span class="text-xs font-mono text-slate-500">managed remotely</span>`
         : s.running
-          ? `<button class="arcade amber" onclick="event.stopPropagation();ctl('${esc(s.name)}','restart')">RESTART</button>
-             <button class="arcade red" onclick="event.stopPropagation();ctl('${esc(s.name)}','stop')">STOP</button>`
-          : `<button class="arcade green" onclick="event.stopPropagation();ctl('${esc(s.name)}','start')">START</button>`;
-      return `<div class="card screws clickable" onclick="window.location='/server/${encodeURIComponent(s.name)}'">
-        <h3 style="margin-top:0">${lamp(s.running ? "green" : "red", true)}${esc(s.name)}${role}${remote}${geyser}</h3>
-        <div class="small muted">:${s.port}${s.mc_version ? " · MC " + esc(s.mc_version) : ""}${s.behind_proxy ? " · → " + esc(s.behind_proxy) : ""}${s.remote && s.host ? " · @ " + esc(s.host) : ""}</div>
-        ${stats}${ram}
-        <div style="margin-top:14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
-          <a class="btn" href="/server/${encodeURIComponent(s.name)}" onclick="event.stopPropagation()">Open</a>
-          ${actions}
+          ? `<button class="sci-btn-cyan px-6 py-2.5 font-display text-xs uppercase font-bold" onclick="event.stopPropagation();location.href='/server/${encodeURIComponent(s.name)}'">Open</button>`
+            + `<button class="sci-btn-amber px-7 py-2.5 font-display text-xs uppercase" onclick="event.stopPropagation();ctl('${esc(s.name)}','restart')">Restart</button>`
+            + `<button class="sci-btn-crimson px-7 py-2.5 font-display text-xs uppercase" onclick="event.stopPropagation();ctl('${esc(s.name)}','stop')">Stop</button>`
+          : `<button class="sci-btn-green px-7 py-2.5 font-display text-xs uppercase font-bold" onclick="event.stopPropagation();ctl('${esc(s.name)}','start')">Boot Instance</button>`
+            + `<a class="px-5 py-2.5 text-xs font-mono text-slate-300 border border-slate-700 hover:border-slate-500 rounded transition" href="/server/${encodeURIComponent(s.name)}" onclick="event.stopPropagation()">Configs</a>`;
+      return `<article class="relative bg-cyber-panel/95 border border-cyber-border rounded-sm p-6 corner-brackets ${s.running ? "" : "opacity-80"}">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="relative flex items-center justify-center">${dot}</div>
+            <div><h3 class="font-display font-black text-xl lg:text-2xl ${s.running ? "text-cyber-cyan" : "text-slate-400"} tracking-wider">${esc(s.name.toUpperCase())}</h3>
+            <span class="font-mono text-xs text-cyber-amber font-semibold">:${s.port}</span></div>
+          </div>
+          <div class="text-right"><span class="px-2.5 py-1 bg-cyber-void border border-slate-700 rounded text-xs font-mono text-slate-300">${esc(s.server_type || "")}</span>
+          ${tps ? `<span class="block text-[10px] font-mono text-emerald-400 mt-1">${tps}</span>` : ""}</div>
         </div>
-      </div>`;
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+          <div class="bg-cyber-surface/90 border border-slate-800 p-3.5 rounded">
+            <span class="text-[11px] font-mono uppercase tracking-widest text-slate-400">Players Online</span>
+            <div class="flex items-baseline space-x-2 mt-2"><div class="px-3.5 py-1 bg-cyber-void border ${s.running ? "border-cyber-cyan/60 text-cyber-cyan" : "border-slate-800 text-slate-500"} rounded font-mono font-bold text-2xl">${players}</div><span class="font-mono text-slate-400 text-sm">/ ${pmax} MAX</span></div>
+          </div>
+          <div class="bg-cyber-surface/90 border border-slate-800 p-3.5 rounded">
+            <span class="text-[11px] font-mono uppercase tracking-widest text-slate-400">RAM Usage</span>
+            <div class="flex items-baseline space-x-2 mt-2"><div class="px-3.5 py-1 bg-cyber-void border ${s.running ? "border-cyber-cyan/60 text-cyber-cyan" : "border-slate-800 text-slate-500"} rounded font-mono font-bold text-2xl">${memMB}</div><span class="font-mono text-slate-400 text-xs">MB${memMax ? " / " + memMax : ""}</span></div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden"><div class="bg-gradient-to-r from-cyber-cyan to-cyber-amber h-full" style="width:${memPct}%"></div></div>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 pt-2">${actions}</div>
+      </article>`;
     }).join("");
   } catch (e) { err.textContent = e.message; }
 }
 
 async function ctl(name, action) {
   const err = document.getElementById("err");
-  err.textContent = "";
   try {
     await api("POST", `/api/servers/${encodeURIComponent(name)}/${action}`);
     load();
@@ -127,7 +226,7 @@ async function ctl(name, action) {
 }
 
 load();
-setInterval(load, 15000);
+setInterval(load, 5000);
 </script>
 </body>
 </html>
