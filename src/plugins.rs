@@ -47,6 +47,79 @@ pub fn detect_mc_version_from_jar(jar_path: &std::path::Path) -> Option<String> 
     json.get("id")?.as_str().map(|s| s.to_string())
 }
 
+/// Detect the server type (paper, spigot, purpur, forge, fabric, etc.)
+/// from the JAR manifest Main-Class and filename.
+pub fn detect_server_type_from_jar(jar_path: &std::path::Path) -> Option<String> {
+    let file = std::fs::File::open(jar_path).ok()?;
+    let mut archive = zip::ZipArchive::new(file).ok()?;
+    // Check manifest Main-Class
+    if let Ok(mut manifest) = archive.by_name("META-INF/MANIFEST.MF") {
+        let mut contents = String::new();
+        use std::io::Read;
+        if manifest.read_to_string(&mut contents).is_ok() {
+            let lower = contents.to_lowercase();
+            if lower.contains("io.papermc.paperclip") {
+                return Some("paper".to_string());
+            }
+            if lower.contains("org.bukkit.craftbukkit") {
+                // Could be spigot or bukkit; check filename
+                let fname = jar_path.file_name()?.to_string_lossy().to_lowercase();
+                if fname.contains("spigot") {
+                    return Some("spigot".to_string());
+                }
+                return Some("bukkit".to_string());
+            }
+            if lower.contains("purpur") {
+                return Some("purpur".to_string());
+            }
+            if lower.contains("net.minecraftforge") || lower.contains("forge") {
+                return Some("forge".to_string());
+            }
+            if lower.contains("net.fabricmc") {
+                return Some("fabric".to_string());
+            }
+            if lower.contains("neoforge") {
+                return Some("neoforge".to_string());
+            }
+        }
+    }
+    // Fallback: check filename
+    let fname = jar_path.file_name()?.to_string_lossy().to_lowercase();
+    for (keyword, loader) in [
+        ("paper", "paper"),
+        ("purpur", "purpur"),
+        ("spigot", "spigot"),
+        ("bukkit", "bukkit"),
+        ("forge", "forge"),
+        ("fabric", "fabric"),
+        ("neoforge", "neoforge"),
+        ("quilt", "quilt"),
+    ] {
+        if fname.contains(keyword) {
+            return Some(loader.to_string());
+        }
+    }
+    None
+}
+
+/// Get the list of Modrinth loaders compatible with a server type.
+/// Bukkit-based servers (paper/spigot/purpur/bukkit) can all run each other's plugins.
+pub fn compatible_loaders(server_type: &str) -> Vec<String> {
+    match server_type {
+        "paper" | "spigot" | "purpur" | "bukkit" => vec![
+            "paper".to_string(),
+            "spigot".to_string(),
+            "purpur".to_string(),
+            "bukkit".to_string(),
+        ],
+        "forge" => vec!["forge".to_string()],
+        "fabric" => vec!["fabric".to_string()],
+        "neoforge" => vec!["neoforge".to_string()],
+        "quilt" => vec!["quilt".to_string(), "fabric".to_string()],
+        _ => vec![server_type.to_string()],
+    }
+}
+
 /// Parse "26.3" or "1.21.1" into (major, minor).
 fn parse_version_pair(v: &str) -> Option<(u64, u64)> {
     let parts: Vec<&str> = v.split('.').collect();

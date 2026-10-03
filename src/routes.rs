@@ -1449,10 +1449,18 @@ async fn plugins_modrinth_versions(
     State(state): State<Arc<AppState>>,
     Path((name, id)): Path<(String, String)>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let _cfg = server_or_404(&state, &name)?;
+    let cfg = server_or_404(&state, &name)?;
+    // Detect server type from JAR and filter by compatible loaders.
+    let jar_path = cfg.dir.join(&cfg.jar);
+    let server_type = plugins::detect_server_type_from_jar(&jar_path);
+    let loaders: Vec<String> = match &server_type {
+        Some(st) => plugins::compatible_loaders(st),
+        None => vec![], // Unknown: show all
+    };
+    let loaders_ref: Vec<&str> = loaders.iter().map(|s| s.as_str()).collect();
     // Fetch all versions; frontend shows MC versions and loaders in the label.
     // The search list already filters incompatible plugins.
-    let mut versions = plugins::modrinth_versions(&state, &id, &[], &[])
+    let mut versions = plugins::modrinth_versions(&state, &id, &loaders_ref, &[])
         .await
         .map_err(|e| err(StatusCode::BAD_GATEWAY, format!("Modrinth failed: {:#}", e)))?;
     // Sort newest first by date_published.
