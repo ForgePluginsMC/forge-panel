@@ -683,6 +683,9 @@ async function refreshHeader() {
       <div class="flex items-center space-x-2">
         <button id="a-kill" class="flex-1 py-1.5 px-2 bg-panel border border-neon-crimson/50 text-neon-crimson text-xs font-mono uppercase tracking-wider rounded">KILL INSTANCE</button>
         <button id="a-backup" class="flex-1 py-1.5 px-2 bg-panel border border-panel-border-bright text-slate-300 text-xs font-mono uppercase tracking-wider rounded">BACKUP NOW</button>
+      </div>
+      <div class="flex items-center space-x-2 mt-2">
+        <button id="a-delete" class="flex-1 py-1.5 px-2 bg-panel border border-neon-crimson hover:bg-neon-crimson hover:text-white text-neon-crimson text-xs font-mono uppercase tracking-wider rounded transition-colors">DELETE SERVER</button>
       </div>`;
   } else {
     actionsEl.innerHTML = `
@@ -751,7 +754,7 @@ async function refreshRack() {
   // Needle rotation (from -90deg to +90deg)
   const needle = document.getElementById("ram-needle");
   if (needle) {
-    const angle = -90 + (pct * 180);
+    const angle = 180 + (pct * 180);
     const rad = angle * Math.PI / 180;
     const x2 = 60 + 37 * Math.cos(rad);
     const y2 = 65 + 37 * Math.sin(rad);
