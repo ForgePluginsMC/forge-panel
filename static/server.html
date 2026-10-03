@@ -415,11 +415,18 @@ async function loadPlayers() {
 }
 
 // ---- Player modal ----
-let curPlayer = null;
-document.getElementById("player-modal-close").onclick = () =>
+let curPlayer = null, playerPoll = null;
+function stopPlayerPoll() {
+  if (playerPoll) { clearInterval(playerPoll); playerPoll = null; }
+}
+function closePlayerModal() {
+  stopPlayerPoll();
+  curPlayer = null;
   document.getElementById("player-modal").style.display = "none";
+}
+document.getElementById("player-modal-close").onclick = closePlayerModal;
 document.getElementById("player-modal").onclick = (e) => {
-  if (e.target.id === "player-modal") e.target.style.display = "none";
+  if (e.target.id === "player-modal") closePlayerModal();
 };
 
 function prettyItem(id) {
@@ -576,9 +583,24 @@ async function openPlayer(name, quiet) {
   if (!quiet) body.innerHTML = `<p class="muted">loading…</p>`;
   try {
     const info = await api("GET", `/api/servers/${enc}/player/${encodeURIComponent(name)}`);
-    body.innerHTML = playerModalHTML(info);
-    bindPlayerActions();
+    // Don't clobber an in-progress form if this was a background refresh
+    // and the user has typed into the give/tp fields.
+    const formActive = quiet && ["p-give-item", "p-tp-x"].some(id => {
+      const el = document.getElementById(id);
+      return el && document.activeElement === el;
+    });
+    if (!formActive) {
+      body.innerHTML = playerModalHTML(info);
+      bindPlayerActions();
+    }
+    // Keep the dossier live while the modal is open.
+    stopPlayerPoll();
+    playerPoll = setInterval(() => {
+      if (curPlayer === name) openPlayer(name, true);
+      else stopPlayerPoll();
+    }, 5000);
   } catch (e) {
+    stopPlayerPoll();
     body.innerHTML = `<p class="error">${esc(e.message)}</p>
       <p class="small muted">Player details need RCON configured on this server (console commands still work without it).</p>`;
   }
