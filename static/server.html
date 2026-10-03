@@ -713,7 +713,7 @@ async function refreshHeader() {
   const bk = document.getElementById("a-backup"); if (bk) bk.onclick = () => go("backup");
   const del = document.getElementById("a-delete"); if (del) del.onclick = async () => {
     if (!confirm(`Delete server "${NAME}"?\n\nThis stops the server, removes it from the panel, and deletes all its files. This cannot be undone.`)) return;
-    try { await api("DELETE", `/api/servers/${enc}`); window.location.href = "/"; }
+    try { await api("POST", `/api/servers/${enc}/delete`); window.location.href = "/"; }
     catch (e) { document.getElementById("err").textContent = e.message; }
   };
   // settings form

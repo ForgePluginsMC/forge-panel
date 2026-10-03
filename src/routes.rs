@@ -1725,7 +1725,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/servers/remote", post(add_remote_server))
         .route("/api/servers/{name}/start", post(start_server))
         .route("/api/servers/{name}/stop", post(stop_server))
-        .route("/api/servers/{name}", delete(delete_server))
+        .route("/api/servers/{name}/delete", post(delete_server))
         .route("/api/servers/{name}/restart", post(restart_server))
         .route("/api/servers/{name}/command", post(send_command))
         .route("/api/servers/{name}/tps", get(tps))
