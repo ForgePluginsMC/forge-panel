@@ -445,7 +445,9 @@ function invGrid(items, slots, cols) {
       let inner = ghost;
       if (it) {
         const icon = `https://minecraft-api.vercel.app/api/item/${encodeURIComponent(it.id)}/icon.png`;
-        inner = `<img class="inv-icon" src="${icon}" alt="${esc(prettyItem(it.id))}" loading="lazy" onerror="this.style.display='none'"><span class="inv-count">${it.count > 1 ? it.count : ""}</span>`;
+        inner = `<img class="inv-icon" src="${icon}" alt="" loading="lazy" onerror="this.remove()">` +
+          `<span class="inv-item">${esc(prettyItem(it.id))}</span>` +
+          (it.count > 1 ? `<span class="inv-count">${it.count}</span>` : "");
       }
       return `<div class="inv-slot${it ? " filled" : ""}" title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
     }).join("") + `</div>`;

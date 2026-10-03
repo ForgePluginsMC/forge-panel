@@ -191,8 +191,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 .inv-slot { aspect-ratio: 1; min-height: 44px; border: 1px solid var(--line); background: rgba(8, 11, 20, 0.85); position: relative; padding: 3px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .inv-slot .inv-item { font-size: 10.5px; line-height: 1.25; color: var(--text); display: block; word-break: break-word; }
 .inv-slot .inv-count { position: absolute; right: 4px; bottom: 2px; font-family: var(--font-m); font-size: 12px; font-weight: 700; color: var(--ember-hi); text-shadow: 0 0 6px rgba(255, 123, 47, 0.7); }
-.inv-slot.filled { border-color: var(--ember); box-shadow: inset 0 0 12px rgba(255, 123, 47, 0.15); }
-.inv-slot .inv-icon { width: 78%; height: 78%; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
+.inv-slot.filled { border-color: var(--ember); box-shadow: inset 0 0 12px rgba(255, 123, 47, 0.15); flex-direction: column; gap: 2px; }
+.inv-slot .inv-icon { width: 52%; height: 52%; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
+.inv-slot .inv-item { font-size: 9px; line-height: 1.2; color: var(--text); display: block; word-break: break-word; text-align: center; max-height: 2.4em; overflow: hidden; }
 /* faint ghost icons on empty armor/offhand slots (vanilla-style) */
 .slot-ghost { width: 62%; height: 62%; color: #46536e; opacity: 0.55; pointer-events: none; }
 .slot-ghost svg { width: 100%; height: 100%; display: block; }
