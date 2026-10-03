@@ -1661,7 +1661,7 @@ function controlHTML(e) {
     case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
     case "enum": {
       const cur = String(e.value).toLowerCase();
-      return `<select ${dl} style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
+      return `<select ${dl} style="background:#ff0000;border:3px solid #ff0000;color:#ffffff;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
         `<option value="${esc(o)}" style="background:#09111c;color:#e2e8f0;"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
     }
     default: return `<input type="text" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">`;
@@ -1897,7 +1897,7 @@ async function pluginDetail(key) {
     el.innerHTML = `<h3 style="margin-top:0">${esc(title)}</h3>
       <p class="muted">${esc(desc || "")}</p>
       <label>Version</label>
-      <select id="pv-select" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;margin:8px 0;">${versions.map(v => `<option value="${esc(v.id)}" style="background:#09111c;color:#e2e8f0;">${verLabel(v)}</option>`).join("")}</select>
+      <select id="pv-select" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;margin:8px 0;appearance:none;-webkit-appearance:none;">${versions.map(v => `<option value="${esc(v.id)}" style="background:#09111c;color:#e2e8f0;">${verLabel(v)}</option>`).join("")}</select>
       <div style="margin-top:14px"><button id="pv-install" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-6 py-2.5 rounded-sm clip-tech-chamfer">INSTALL</button>
       <span class="small muted" id="pv-msg"></span></div>`;
     document.getElementById("pv-install").onclick = async () => {
