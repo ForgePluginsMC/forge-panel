@@ -170,6 +170,13 @@
     .toggle input:checked ~ .tlabel.on { display: inline !important; color: #00ff88; }
     .toggle input:not(:checked) ~ .tlabel.off { display: inline !important; color: #64748b; }
 
+
+    /* Smart config editor layout */
+    .cfg-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; min-height: 28px; }
+    .cfg-key { flex: 0 0 280px; text-align: right; font-family: monospace; font-size: 12px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cfg-ctl { flex: 1; display: flex; align-items: center; }
+    .cfg-section { font-family: monospace; font-size: 12px; color: #00f0ff; margin: 16px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid #1e3a52; }
+
 </style>
 </head>
 <body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">
@@ -1654,8 +1661,8 @@ function controlHTML(e) {
     case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
     case "enum": {
       const cur = String(e.value).toLowerCase();
-      return `<select ${dl} style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;">` + e.kind.options.map(o =>
-        `<option value="${esc(o)}"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
+      return `<select ${dl} style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">` + e.kind.options.map(o =>
+        `<option value="${esc(o)}" style="background:#09111c!important;color:#e2e8f0!important;"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
     }
     default: return `<input type="text" ${dl} value="${esc(e.value)}" style="background:#050b12!important;border:1px solid #234468!important;color:#e2e8f0!important;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">`;
   }
