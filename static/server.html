@@ -1,194 +1,391 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>forge-panel — server</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css?v=2">
-<script src="https://cdn.tailwindcss.com"></script>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Forge-Panel // Server Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Orbitron:wght@500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
 <script>
-tailwind.config = {
-  theme: { extend: { colors: {
-    cyber: { bg:'#060a12', card:'#0a1120', panel:'#0e182b', slot:'#080d18',
-      cyan:'#00f0ff', emerald:'#00e599', amber:'#ff9f1c', rose:'#ff2a5f',
-      purple:'#9d4edd', border:'#162844' }
-  }, fontFamily: {
-    orbitron:['Orbitron','sans-serif'], rajdhani:['Rajdhani','sans-serif'],
-    mono:['JetBrains Mono','monospace']
-  } } }
-};
-</script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            midnight: '#050a10',
+            panel: '#09111c',
+            'panel-card': '#0d1826',
+            'panel-border': '#15293f',
+            'panel-border-bright': '#234468',
+            'neon-cyan': '#00f0ff',
+            'neon-green': '#00ff88',
+            'neon-amber': '#ff9900',
+            'neon-crimson': '#ff2a5f',
+            'neon-yellow': '#ffd600',
+          },
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+            mono: ['"Share Tech Mono"', 'monospace'],
+            code: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
 <style>
-.pixelated-render { image-rendering: pixelated; }
-.hud-border-glow { box-shadow: 0 0 0 1px rgba(0,240,255,.25), 0 0 25px rgba(0,240,255,.12); }
-.clip-hud-corner { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
+    body {
+      background-color: #04080e;
+      background-image: 
+        linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: #b5c7db;
+    }
+    .hud-bracket-container { position: relative; }
+    .hud-bracket-container::before {
+      content: ''; position: absolute; top: -1px; left: -1px;
+      width: 10px; height: 10px;
+      border-top: 2px solid #ff9900; border-left: 2px solid #ff9900;
+      pointer-events: none; z-index: 10;
+    }
+    .hud-bracket-container::after {
+      content: ''; position: absolute; bottom: -1px; right: -1px;
+      width: 10px; height: 10px;
+      border-bottom: 2px solid #ff9900; border-right: 2px solid #ff9900;
+      pointer-events: none; z-index: 10;
+    }
+    .hud-bracket-cyan::before { border-top: 2px solid #00f0ff !important; border-left: 2px solid #00f0ff !important; }
+    .hud-bracket-cyan::after { border-bottom: 2px solid #00f0ff !important; border-right: 2px solid #00f0ff !important; }
+    .clip-tech-chamfer {
+      clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    }
+    .clip-tab-cut {
+      clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+    }
+    .terminal-scroll::-webkit-scrollbar { width: 7px; }
+    .terminal-scroll::-webkit-scrollbar-track { background: #060c14; }
+    .terminal-scroll::-webkit-scrollbar-thumb { background: #173250; border-radius: 2px; }
+    .terminal-scroll::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+    .scanlines-overlay {
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.35));
+      background-size: 100% 4px; pointer-events: none;
+    }
+    .glow-cyan-text { text-shadow: 0 0 10px rgba(0, 240, 255, 0.7); }
+    /* Tab content styling */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    /* Preserve functional element styles */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: monospace; margin-right: 4px; }
+    .badge.proxy { background: #1a2a3a; color: #00f0ff; border: 1px solid #00f0ff44; }
+    .badge.remote { background: #2a1a3a; color: #c084fc; border: 1px solid #c084fc44; }
+    .badge.geyser { background: #1a3a2a; color: #00ff88; border: 1px solid #00ff8844; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #15293f; font-size: 13px; }
+    th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
+    .btn { padding: 6px 12px; background: #0d1826; border: 1px solid #234468; color: #b5c7db; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn:hover { border-color: #00f0ff; color: #00f0ff; }
+    input[type="text"], input:not([type]) { background: #050b12; border: 1px solid #15293f; color: #e2e8f0; padding: 8px 12px; border-radius: 4px; }
+    input:focus { outline: none; border-color: #00f0ff; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal .box { background: #09111c; border: 1px solid #234468; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .modal .box.wide { max-width: 900px; }
 </style>
 </head>
-<body>
-<header class="top">
-  <h1><span class="flame">🔥</span> <a href="/" style="color:var(--text)">forge-panel</a> <span class="muted">/ <span id="srv-name"></span></span></h1>
-  <nav>
-    <a href="/">Dashboard</a>
-    <a href="/install">Install</a>
-    <button onclick="logout()">Logout</button>
-  </nav>
+<body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">
+<header class="w-full bg-[#070e17] border-b border-panel-border px-4 py-2.5 flex items-center justify-between sticky top-0 z-50 shadow-lg">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded border border-neon-amber/50 bg-neon-amber/10 flex items-center justify-center text-neon-amber">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24"><path d="M12 2C9.5 6 12 8.5 10 11.5C9 10 8 9.5 8 9.5C6 12.5 7 16 9 18C7.5 18 6 16.5 6 15C4.5 17.5 5 20.5 8 22C11 23.5 16 23 18 19C20 15 17 11 15 10C15 10 15.5 12 14 13C12.5 14 11 12 12 9C12.5 7.5 13.5 5.5 12 2Z"></path></svg>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="font-orbitron font-extrabold tracking-widest text-lg text-white">FORGE-PANEL</span>
+<span class="text-neon-cyan/60 font-bold text-sm">/</span>
+<span class="font-orbitron font-bold text-sm tracking-wider text-neon-cyan glow-cyan-text" id="hdr-server-name">SERVER</span><span id="srv-title" style="display:none"></span>
+</div>
+<div class="ml-2 flex items-center space-x-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-neon-green/30 text-[11px] text-neon-green" id="hdr-status">
+<span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
+<span class="tracking-wider uppercase font-semibold" id="hdr-status-text">ONLINE</span>
+</div>
+</div>
+<nav class="hidden lg:flex items-center space-x-1 tracking-wider text-xs">
+<a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="/">Dashboard</a>
+<a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="#">Nodes</a>
+<a class="px-4 py-1.5 rounded-sm border border-neon-cyan text-neon-cyan bg-neon-cyan/10 font-bold uppercase" href="#">Terminal</a>
+<a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="/install">Install</a>
+</nav>
+<div class="flex items-center space-x-4">
+<div class="hidden sm:flex flex-col text-right text-[11px] leading-tight text-slate-400">
+<span class="text-neon-cyan font-mono">NODE://US-EAST-METAL04</span>
+<span class="text-slate-500">DAEMON v3.8.4-REL</span>
+</div>
+<button class="px-3 py-1 text-xs uppercase font-orbitron tracking-wider text-neon-crimson border border-neon-crimson/50 hover:bg-neon-crimson/10 transition-colors rounded-sm" onclick="logout()">LOGOUT</button>
+</div>
 </header>
-<main>
-  <div class="card screws">
-    <h2 style="margin:0"><span id="srv-lamp"></span><span id="srv-title"></span> <span id="srv-badges"></span></h2>
-    <div class="small muted" id="srv-meta" style="margin:4px 0 8px"></div>
-    <div class="rack-row" id="rack" style="display:none">
-      <div id="rack-ram"></div>
-      <div id="rack-tps"></div>
-      <div>
-        <div class="rack-label">Players</div>
-        <div id="rack-players"><span class="seg">—</span></div>
-      </div>
-      <div>
-        <div class="rack-label">RAM LED</div>
-        <div id="rack-led"></div>
-      </div>
-    </div>
-    <div style="margin-top:14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center" id="srv-actions"></div>
-  </div>
 
-  <div class="tabs" id="tabs">
-    <button data-tab="console" class="active">Console</button>
-    <button data-tab="players">Players</button>
-    <button data-tab="files">Files</button>
-    <button data-tab="backups">Backups</button>
-    <button data-tab="plugins">Plugins</button>
-    <button data-tab="settings">Settings</button>
-  </div>
+<main class="flex-1 max-w-[1720px] w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
+<div id="err" class="text-neon-crimson text-sm font-mono"></div>
 
-  <div id="tab-console">
-    <div class="bezel">
-      <div id="console-log"></div>
-      <div class="cmdbar">
-        <input id="cmd-input" placeholder="console command…" autocomplete="off">
-        <button class="arcade amber" id="cmd-send" style="padding:10px 20px">SEND</button>
-      </div>
-      <p class="small muted" id="cmd-out"></p>
-    </div>
-  </div>
+<section class="hud-bracket-container bg-[#08111c] border border-panel-border p-4 rounded-sm">
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-center">
+<div class="xl:col-span-3 flex flex-col justify-center border-b xl:border-b-0 xl:border-r border-panel-border pb-4 xl:pb-0 pr-0 xl:pr-4">
+<div class="flex items-center space-x-2.5">
+<span id="srv-lamp"></span>
+<h1 class="font-orbitron font-extrabold text-2xl tracking-wider text-white" id="srv-name">SERVER</h1>
+<span class="px-2 py-0.5 text-[11px] font-mono bg-panel border border-neon-cyan/40 text-neon-cyan rounded" id="srv-version">—</span>
+</div>
+<div class="mt-2 text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
+<span>BIND: <strong class="text-neon-cyan font-normal" id="srv-bind">—</strong></span>
+<span>TPS: <strong class="text-neon-green font-normal" id="srv-tps">—</strong></span>
+<span>UPTIME: <strong class="text-slate-300 font-normal" id="srv-uptime">—</strong></span>
+</div>
+<div class="mt-2 text-[11px] text-slate-500" id="srv-meta">—</div>
+<div class="mt-1" id="srv-badges"></div>
+</div>
 
-  <div id="tab-players" style="display:none">
-    <div class="card screws"><h3>Players</h3><div id="players-list" class="muted">loading…</div></div>
-    <div class="card screws" id="banned-card" style="display:none"><h3>Banned</h3><div id="banned-list"></div></div>
-  </div>
+<div class="xl:col-span-3 flex items-center justify-center space-x-3 py-1">
+<div class="relative w-36 h-28 flex flex-col items-center justify-end">
+<svg class="w-36 h-24 transform -rotate-180" viewbox="0 0 120 70">
+<path d="M 15 65 A 45 45 0 0 1 105 65" fill="none" stroke="#162c46" stroke-linecap="round" stroke-width="8"></path>
+<path id="ram-arc" class="filter drop-shadow-[0_0_6px_rgba(0,240,255,0.7)]" d="M 15 65 A 45 45 0 0 1 105 65" fill="none" stroke="#00f0ff" stroke-dasharray="141.3" stroke-dashoffset="141.3" stroke-linecap="round" stroke-width="8"></path>
+<line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="60" y1="65" y2="28"></line>
+<circle cx="60" cy="65" fill="#ff9900" r="4.5"></circle>
+</svg>
+<div class="text-center absolute bottom-1 flex flex-col items-center">
+<span class="font-orbitron font-extrabold text-lg text-neon-amber tracking-wider leading-none" id="ram-use-text">—</span>
+<span class="text-[10px] uppercase text-slate-400 tracking-widest mt-1">RAM USE</span>
+</div>
+</div>
+<div class="text-xs space-y-1">
+<div class="text-slate-400">POOL ALLOCATED</div>
+<div class="text-neon-cyan font-bold text-sm" id="ram-alloc-text">—</div>
+<div class="text-[10px] text-slate-500" id="ram-pct-text">—</div>
+</div>
+</div>
+
+<div class="xl:col-span-3 flex items-center justify-around border-t xl:border-t-0 xl:border-l xl:border-r border-panel-border pt-4 xl:pt-0 px-2">
+<div class="flex flex-col items-center">
+<span class="text-[11px] font-orbitron tracking-widest text-slate-400 mb-1.5 uppercase">PLAYERS</span>
+<div class="flex items-baseline space-x-1.5 bg-[#050c14] px-4 py-1.5 border border-panel-border-bright rounded" id="rack-players">
+<span class="font-orbitron font-extrabold text-2xl text-neon-cyan glow-cyan-text">—</span>
+</div>
+<span class="text-[10px] text-slate-500 mt-1">WHITELIST: OFF</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="flex items-center space-x-1.5 mb-1.5">
+<span class="text-[11px] font-orbitron tracking-widest text-slate-400 uppercase">RAM LED</span>
+<span class="text-[9px] text-neon-green">ACTIVE</span>
+</div>
+<div class="flex space-x-1 p-2 bg-[#050c14] border border-panel-border-bright rounded" id="rack-led"></div>
+<span class="text-[10px] text-slate-500 mt-1" id="led-text">—</span>
+</div>
+</div>
+
+<div class="xl:col-span-3 flex flex-col sm:flex-row xl:flex-col gap-2.5 justify-center" id="srv-actions">
+</div>
+</div>
+</section>
+
+<nav class="flex items-center space-x-2 border-b border-panel-border pb-1 overflow-x-auto" id="tabs">
+<button data-tab="console" class="flex items-center space-x-2 px-5 py-2 text-xs font-orbitron font-bold tracking-wider uppercase text-neon-cyan bg-neon-cyan/10 border-t-2 border-l border-r border-neon-cyan rounded-t clip-tab-cut">
+<span>CONSOLE</span><span class="w-2 h-2 rounded-full bg-neon-green animate-ping"></span>
+</button>
+<button data-tab="players" class="flex items-center space-x-2 px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">
+<span>PLAYERS</span><span class="px-1.5 py-0.2 bg-panel-card text-[10px] text-slate-300 rounded border border-panel-border" id="players-count">0</span>
+</button>
+<button data-tab="files" class="px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">FILES</button>
+<button data-tab="backups" class="flex items-center space-x-1.5 px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">
+<span>BACKUPS</span><span class="w-1.5 h-1.5 rounded-full bg-neon-cyan"></span>
+</button>
+<button data-tab="plugins" class="px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">PLUGINS</button>
+<button data-tab="settings" class="px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">SETTINGS</button>
+</nav>
+
+<section class="flex-1 flex flex-col bg-[#070e17] border border-panel-border rounded-sm hud-bracket-container hud-bracket-cyan min-h-[520px] shadow-2xl relative overflow-hidden tab-panel active" id="tab-console">
+<div class="px-4 py-2.5 bg-[#091320] border-b border-panel-border flex flex-wrap items-center justify-between gap-3 text-xs">
+<div class="flex items-center space-x-3">
+<span class="font-orbitron font-semibold tracking-wider text-xs uppercase text-slate-200 flex items-center gap-2">
+<span class="w-2.5 h-2.5 bg-neon-cyan rounded-xs inline-block"></span>
+CONSOLE STREAM // ACTIVE SESSION
+</span>
+<span class="hidden sm:inline-block text-[11px] text-slate-500 font-mono">ENCODING: UTF-8</span>
+<span class="hidden md:inline-block px-2 py-0.5 rounded bg-[#031525] border border-neon-cyan/30 text-[10px] text-neon-cyan">BUFFER: 1,500 LINES</span>
+</div>
+<div class="flex items-center space-x-2">
+<label class="flex items-center space-x-1.5 cursor-pointer text-slate-400 hover:text-slate-200 select-none mr-2">
+<input checked="" class="form-checkbox h-3.5 w-3.5 rounded bg-panel border-panel-border-bright text-neon-cyan focus:ring-0" type="checkbox" id="autoscroll"/>
+<span class="text-[11px] uppercase tracking-wider">Auto-Scroll</span>
+</label>
+<div class="relative hidden sm:block">
+<input class="bg-[#050b12] border border-panel-border text-xs px-2.5 py-1 rounded text-slate-300 placeholder-slate-600 focus:outline-none focus:border-neon-cyan w-36 lg:w-48 font-code" placeholder="Filter logs..." type="text" id="log-filter"/>
+</div>
+<button class="p-1 px-2.5 bg-panel hover:bg-slate-800 text-slate-300 border border-panel-border rounded text-[11px] uppercase font-mono" title="Clear Console" id="clear-log">Clear</button>
+<button class="p-1 px-2.5 bg-panel hover:bg-slate-800 text-neon-cyan border border-neon-cyan/40 rounded text-[11px] uppercase font-mono flex items-center space-x-1" title="Download Full Log" id="download-log">
+<span>Log</span>
+</button>
+</div>
+</div>
+<div class="flex-1 p-4 overflow-y-auto terminal-scroll font-code text-xs md:text-[13px] leading-relaxed relative bg-[#04080e]/95" id="console-log" style="max-height: 60vh;">
+<div class="scanlines-overlay absolute inset-0 pointer-events-none"></div>
+</div>
+<div class="p-3 bg-[#08121f] border-t border-panel-border flex items-center gap-2">
+<div class="text-neon-amber font-orbitron font-bold px-2 select-none">&gt;_</div>
+<div class="flex-1 relative">
+<input class="w-full bg-[#040910] border border-panel-border-bright rounded px-3.5 py-2.5 text-sm font-code text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50" id="cmd-input" placeholder="console command... (e.g. say Hello World, op player, tp, gamerule)" type="text" autocomplete="off"/>
+</div>
+<button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider px-6 py-2.5 rounded-sm clip-tech-chamfer flex items-center space-x-2" id="cmd-send">
+<span>SEND</span>
+<svg class="w-4 h-4 fill-black" viewbox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+</button>
+</div>
+<p class="px-4 py-1 text-[11px] text-slate-500 font-mono" id="cmd-out"></p>
+<div id="paction-out"></div>
+</section>
+
+<section class="tab-panel" id="tab-players">
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">PLAYERS</h3>
+<div id="players-list" class="text-slate-400">loading…</div>
+</div>
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container mt-4" id="banned-card" style="display:none">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">BANNED</h3>
+<div id="banned-list"></div>
+</div>
+</section>
 
 <div class="modal" id="player-modal" style="display:none">
-  <div class="box wide">
-    <div style="display:flex; justify-content:flex-end">
-      <button class="btn" id="player-modal-close">✕</button>
-    </div>
-    <div id="player-modal-body"></div>
-  </div>
+<div class="box wide">
+<div style="display:flex; justify-content:flex-end"><button class="btn" id="player-modal-close">✕</button></div>
+<div id="player-modal-body"></div>
+</div>
 </div>
 
-  <div id="tab-files" style="display:none">
-    <div class="card screws">
-      <h3>Files <span class="muted small" id="files-path"></span></h3>
-      <table><thead><tr><th>Name</th><th>Size</th><th></th></tr></thead><tbody id="files-body"></tbody></table>
-    </div>
-  </div>
-
-  <div id="tab-backups" style="display:none">
-    <div class="card screws">
-      <h3>Backups</h3>
-      <button class="arcade amber" id="backup-btn" style="padding:10px 20px">BACKUP</button>
-      <span class="small muted" id="backup-msg"></span>
-      <table style="margin-top:12px"><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody id="backups-body"></tbody></table>
-    </div>
-  </div>
-
-  <div id="tab-plugins" style="display:none">
-    <div class="card screws">
-      <h3>Installed plugins</h3>
-      <table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody id="installed-body"></tbody></table>
-    </div>
-    <div class="card screws">
-      <h3>Plugin browser</h3>
-      <div class="form-row">
-        <input id="plugin-q" placeholder="search plugins…">
-        <button class="btn" id="plugin-search">Search</button>
-        <button class="btn" id="plugin-trending">Trending</button>
-      </div>
-      <div class="plugin-browser-body">
-        <aside class="plugin-sidebar">
-          <h4>Category</h4>
-          <div class="cat-list" id="plugin-cats"></div>
-        </aside>
-        <div class="plugin-main">
-          <div class="plugin-list" id="plugin-results"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-<div class="modal" id="plugin-modal" style="display:none">
-  <div class="box">
-    <div style="display:flex; justify-content:flex-end">
-      <button class="btn" id="plugin-modal-close">✕</button>
-    </div>
-    <div id="plugin-modal-body"></div>
-  </div>
+<section class="tab-panel" id="tab-files">
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">FILES <span class="text-slate-500 font-mono text-xs" id="files-path"></span></h3>
+<div class="overflow-x-auto">
+<table><thead><tr><th>Name</th><th>Size</th><th></th></tr></thead><tbody id="files-body"></tbody></table>
 </div>
-
-  <div id="tab-settings" style="display:none">
-    <div class="card screws">
-      <h3>Settings</h3>
-      <div class="rack-label">Heap allocation (faders, MB)</div>
-      <div style="display:flex; gap:8px; align-items:flex-start">
-        <div class="fader-box">
-          <div class="f-label">Xms</div>
-          <input type="range" class="fader" id="set-xms" min="256" max="16384" step="256" value="1024">
-          <div class="f-val" id="set-xms-val">1024</div>
-        </div>
-        <div class="fader-box">
-          <div class="f-label">Xmx</div>
-          <input type="range" class="fader" id="set-xmx" min="256" max="16384" step="256" value="2048">
-          <div class="f-val" id="set-xmx-val">2048</div>
-        </div>
-      </div>
-      <label>Behind proxy (name of a proxy server, empty = none)</label>
-      <input id="set-proxy" placeholder="">
-      <div style="margin-top:12px"><button class="arcade amber" id="settings-save" style="padding:10px 22px">SAVE</button>
-      <span class="small muted" id="settings-msg"></span></div>
-    </div>
-    <div class="card screws">
-      <h3>Geyser (Bedrock crossplay)</h3>
-      <p class="small muted">One-click: downloads Geyser + Floodgate jars into plugins/, enables Floodgate auth, restarts the server.</p>
-      <button class="arcade amber" id="geyser-btn" style="padding:10px 20px">GEYSER INSTALL</button>
-      <span class="small muted" id="geyser-msg"></span>
-    </div>
-  </div>
-
-  <p class="error" id="err"></p>
-</main>
+</div>
+</section>
 
 <div class="modal" id="file-modal" style="display:none">
-  <div class="box wide">
-    <header>
-      <h3 id="file-modal-title"></h3>
-      <div style="display:flex; gap:8px; align-items:center">
-        <div class="seg-toggle" id="file-mode-toggle" style="display:none">
-          <button data-fmode="smart" class="active">Settings</button><button data-fmode="raw">Raw</button>
-        </div>
-        <button class="btn" id="file-modal-close">✕</button>
-      </div>
-    </header>
-    <div id="file-smart" class="cfg-form" style="display:none"></div>
-    <textarea id="file-modal-text"></textarea>
-    <footer><button class="btn primary" id="file-modal-save">Save</button><span class="small muted" id="file-modal-msg"></span></footer>
-  </div>
+<div class="box wide">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+<span id="file-modal-title" class="font-mono text-sm text-white"></span>
+<button class="btn" id="file-modal-close">✕</button>
+</div>
+<div class="flex items-center gap-2 mb-2">
+<button class="btn text-xs" id="file-mode-toggle">Toggle wrap</button>
+<span class="text-xs text-slate-500" id="file-smart"></span>
+</div>
+<textarea id="file-modal-text" class="w-full font-code text-xs bg-[#040910] border border-panel-border rounded p-3 text-slate-200" rows="20" style="white-space: pre;"></textarea>
+<div class="mt-3 flex items-center gap-2">
+<button class="btn" id="file-modal-save" style="border-color: #00f0ff; color: #00f0ff;">SAVE</button>
+<span class="text-xs text-slate-500" id="file-modal-msg"></span>
+</div>
+</div>
 </div>
 
-<script src="/static/app.js?v=2"></script>
+<section class="tab-panel" id="tab-backups">
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">BACKUPS</h3>
+<button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer" id="backup-btn">BACKUP</button>
+<span class="text-xs text-slate-500 ml-2" id="backup-msg"></span>
+<div class="overflow-x-auto mt-4">
+<table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody id="backups-body"></tbody></table>
+</div>
+</div>
+</section>
+
+<section class="tab-panel" id="tab-plugins">
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container mb-4">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">INSTALLED PLUGINS</h3>
+<div class="overflow-x-auto">
+<table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody id="installed-body"></tbody></table>
+</div>
+</div>
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">PLUGIN BROWSER</h3>
+<div class="flex flex-wrap gap-2 mb-4">
+<input id="plugin-q" placeholder="search plugins…" class="flex-1 min-w-[200px]"/>
+<button class="btn" id="plugin-search">Search</button>
+<button class="btn" id="plugin-trending">Trending</button>
+</div>
+<div class="flex gap-4">
+<aside class="w-48 shrink-0">
+<h4 class="text-xs font-orbitron tracking-wider text-slate-400 mb-2">CATEGORY</h4>
+<div id="plugin-cats" class="space-y-1"></div>
+</aside>
+<div class="flex-1">
+<div id="plugin-results" class="space-y-2"></div>
+</div>
+</div>
+</div>
+</section>
+
+<div class="modal" id="plugin-modal" style="display:none">
+<div class="box">
+<div style="display:flex; justify-content:flex-end"><button class="btn" id="plugin-modal-close">✕</button></div>
+<div id="plugin-modal-body"></div>
+</div>
+</div>
+
+<section class="tab-panel" id="tab-settings">
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container mb-4">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">SETTINGS</h3>
+<div class="text-xs text-slate-400 mb-2">Heap allocation (MB)</div>
+<div class="flex gap-6 mb-4">
+<div>
+<div class="text-[11px] text-slate-500 mb-1">Xms</div>
+<input type="range" id="set-xms" min="256" max="16384" step="256" value="1024" class="w-48"/>
+<div class="font-mono text-sm text-neon-cyan" id="set-xms-val">1024</div>
+</div>
+<div>
+<div class="text-[11px] text-slate-500 mb-1">Xmx</div>
+<input type="range" id="set-xmx" min="256" max="16384" step="256" value="2048" class="w-48"/>
+<div class="font-mono text-sm text-neon-cyan" id="set-xmx-val">2048</div>
+</div>
+</div>
+<label class="text-xs text-slate-400 block mb-1">Behind proxy (name of a proxy server, empty = none)</label>
+<input id="set-proxy" placeholder="" class="w-full max-w-md mb-4"/>
+<div><button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer" id="settings-save">SAVE</button>
+<span class="text-xs text-slate-500 ml-2" id="settings-msg"></span></div>
+</div>
+<div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
+<h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">GEYSER (BEDROCK CROSSPLAY)</h3>
+<p class="text-xs text-slate-500 mb-3">One-click: downloads Geyser + Floodgate jars into plugins/, enables Floodgate auth, restarts the server.</p>
+<button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer" id="geyser-btn">GEYSER INSTALL</button>
+<span class="text-xs text-slate-500 ml-2" id="geyser-msg"></span>
+<div class="mt-3" id="pv-install" style="display:none">
+<button class="btn text-xs" id="pv-install-btn">Install ViaVersion</button>
+</div>
+</div>
+</section>
+
+</main>
+
+<footer class="w-full bg-[#050c14] border-t border-panel-border px-5 py-2 text-xs flex flex-wrap items-center justify-between text-slate-400">
+<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-1.5">
+<span class="w-2 h-2 rounded-full bg-neon-green"></span>
+<span class="text-slate-300">WS-STREAM: <strong class="text-neon-cyan font-normal">SYNCHRONIZED</strong></span>
+</div>
+<span class="text-panel-border-bright">|</span>
+<span>DAEMON: <strong class="text-slate-300 font-normal">v3.8.4-RELEASE</strong></span>
+<span class="text-panel-border-bright hidden sm:inline">|</span>
+<span class="hidden sm:inline">HOST: <strong class="text-slate-300 font-normal">node-us-east-metal04</strong></span>
+</div>
+<div class="flex items-center space-x-4 mt-1 sm:mt-0 text-[11px]">
+<div>LATENCY: <span class="text-neon-green font-mono" id="latency">—</span></div>
+<div class="hidden md:inline text-panel-border-bright">|</div>
+<div class="hidden md:inline">MEMORY LEAK GUARD: <span class="text-neon-cyan">ACTIVE</span></div>
+<div class="text-panel-border-bright">|</div>
+<div class="text-slate-500">FORGE-PANEL SYSTEMS © 2024</div>
+</div>
+</footer>
+
 <script>
+
 const NAME = serverNameFromPath();
 const enc = encodeURIComponent(NAME);
 document.getElementById("srv-name").textContent = NAME;
@@ -199,12 +396,20 @@ let psrc = "plugin";
 let ramGauge = null, tpsGauge = null, headerInit = false;
 
 // Tabs
+const TAB_ACTIVE = ["text-neon-cyan", "bg-neon-cyan/10", "border-neon-cyan"];
+const TAB_INACTIVE = ["text-slate-400", "border-transparent"];
 document.querySelectorAll("#tabs button").forEach(b => {
   b.onclick = () => {
-    document.querySelectorAll("#tabs button").forEach(x => x.classList.remove("active"));
-    b.classList.add("active");
+    document.querySelectorAll("#tabs button").forEach(x => {
+      x.classList.remove(...TAB_ACTIVE);
+      if (!x.classList.contains("text-slate-400")) x.classList.add("text-slate-400");
+    });
+    b.classList.remove(...TAB_INACTIVE);
+    b.classList.add(...TAB_ACTIVE);
     ["console","players","files","backups","plugins","settings"].forEach(t => {
-      document.getElementById("tab-" + t).style.display = t === b.dataset.tab ? "block" : "none";
+      const el = document.getElementById("tab-" + t);
+      if (t === b.dataset.tab) { el.classList.add("active"); el.style.display = ""; }
+      else { el.classList.remove("active"); el.style.display = "none"; }
     });
     if (b.dataset.tab === "players") loadPlayers();
     if (b.dataset.tab === "files") loadFiles("");
@@ -278,11 +483,35 @@ async function refreshHeader() {
     `:${s.port}` +
     (s.behind_proxy ? ` · → ${s.behind_proxy}` : "") +
     (s.remote ? ` · remote @ ${s.host || "?"}` : "");
-  document.getElementById("srv-actions").innerHTML = s.remote
-    ? `<span class="muted small">remote server — start/stop on its host</span>`
-    : (s.running
-      ? `<button class="arcade amber" id="a-restart">RESTART</button><button class="arcade red" id="a-stop">STOP</button>`
-      : `<button class="arcade green" id="a-start">START</button>`);
+  // New HUD telemetry elements
+  document.getElementById("hdr-server-name").textContent = s.name.toUpperCase();
+  document.getElementById("srv-name").textContent = s.name.toUpperCase();
+  const verBadge = [s.server_type, s.mc_version].filter(Boolean).join(" ");
+  document.getElementById("srv-version").textContent = verBadge || "—";
+  document.getElementById("srv-bind").textContent = `0.0.0.0:${s.port}`;
+  const hdrStatus = document.getElementById("hdr-status-text");
+  if (hdrStatus) hdrStatus.textContent = s.running ? `ONLINE: ${s.port}` : "OFFLINE";
+  // Action buttons (HUD style)
+  const actionsEl = document.getElementById("srv-actions");
+  if (s.remote) {
+    actionsEl.innerHTML = `<span class="text-xs font-mono text-slate-500">remote server — start/stop on its host</span>`;
+  } else if (s.running) {
+    actionsEl.innerHTML = `
+      <div class="flex items-center gap-2 w-full">
+        <button id="a-restart" class="flex-1 py-2.5 px-3 bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider rounded-sm clip-tech-chamfer text-center text-sm">RESTART</button>
+        <button id="a-stop" class="flex-1 py-2.5 px-3 bg-neon-crimson hover:bg-rose-600 text-white font-orbitron font-extrabold tracking-wider rounded-sm clip-tech-chamfer text-center text-sm">STOP</button>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="a-kill" class="flex-1 py-1.5 px-2 bg-panel border border-neon-crimson/50 text-neon-crimson text-xs font-mono uppercase tracking-wider rounded">KILL INSTANCE</button>
+        <button id="a-backup" class="flex-1 py-1.5 px-2 bg-panel border border-panel-border-bright text-slate-300 text-xs font-mono uppercase tracking-wider rounded">BACKUP NOW</button>
+      </div>`;
+  } else {
+    actionsEl.innerHTML = `
+      <div class="flex items-center gap-2 w-full">
+        <button id="a-start" class="flex-1 py-2.5 px-3 bg-neon-green hover:bg-emerald-400 text-black font-orbitron font-extrabold tracking-wider rounded-sm clip-tech-chamfer text-center text-sm">START</button>
+      </div>`;
+  }
+  // srv-actions populated by HUD telemetry code above
   // Remote servers have no local files/backups/plugins/settings here.
   for (const t of ["files", "backups", "plugins", "settings"]) {
     const btn = document.querySelector(`#tabs button[data-tab="${t}"]`);
@@ -298,6 +527,8 @@ async function refreshHeader() {
   const rs = document.getElementById("a-restart"); if (rs) rs.onclick = () => go("restart");
   const st = document.getElementById("a-stop"); if (st) st.onclick = () => go("stop");
   const sa = document.getElementById("a-start"); if (sa) sa.onclick = () => go("start");
+  const kl = document.getElementById("a-kill"); if (kl) kl.onclick = () => { if (confirm("Kill server process?")) go("kill"); };
+  const bk = document.getElementById("a-backup"); if (bk) bk.onclick = () => go("backup");
   // settings form
   if (s.xms_mb) { document.getElementById("set-xms").value = s.xms_mb; document.getElementById("set-xms-val").textContent = s.xms_mb; }
   if (s.xmx_mb) { document.getElementById("set-xmx").value = s.xmx_mb; document.getElementById("set-xmx-val").textContent = s.xmx_mb; }
@@ -315,28 +546,63 @@ async function refreshHeader() {
 // Instrument rack: RAM gauge, TPS gauge (via RCON), player 7-seg, LED bar.
 async function refreshRack() {
   const s = serverInfo;
-  const rack = document.getElementById("rack");
-  if (!s || !s.running) { rack.style.display = "none"; return; }
-  rack.style.display = "flex";
+  if (!s || !s.running) return;
   const maxRam = s.xmx_mb || 4096;
-  if (!ramGauge) ramGauge = makeGauge(document.getElementById("rack-ram"),
-    { label: "RAM use", unit: "MB", min: 0, max: maxRam, redline: maxRam * 0.9 });
-  ramGauge.set(s.memory_mb);
-  ledBar(document.getElementById("rack-led"), (s.memory_mb || 0) / maxRam, 12);
-  document.getElementById("rack-players").innerHTML =
-    s.players_online != null ? `<span class="seg">${s.players_online}</span> <span class="muted small">/ ${s.players_max != null ? s.players_max : "?"}</span>` : `<span class="seg">—</span>`;
-  // TPS via the cached /tps endpoint (no console spam); hidden when unavailable.
-  const tpsBox = document.getElementById("rack-tps");
+  const memMB = s.memory_mb || 0;
+  const pct = Math.min(1, memMB / maxRam);
+  // Radial RAM gauge (SVG arc)
+  const arc = document.getElementById("ram-arc");
+  if (arc) {
+    const dashoffset = 141.3 * (1 - pct);
+    arc.setAttribute("stroke-dashoffset", dashoffset.toFixed(1));
+  }
+  // Needle rotation (from -90deg to +90deg)
+  const needle = document.getElementById("ram-needle");
+  if (needle) {
+    const angle = -90 + (pct * 180);
+    const rad = angle * Math.PI / 180;
+    const x2 = 60 + 37 * Math.cos(rad);
+    const y2 = 65 + 37 * Math.sin(rad);
+    needle.setAttribute("x2", x2.toFixed(1));
+    needle.setAttribute("y2", y2.toFixed(1));
+  }
+  document.getElementById("ram-use-text").textContent = memMB.toLocaleString() + " MB";
+  document.getElementById("ram-alloc-text").textContent = maxRam.toLocaleString() + " MB";
+  document.getElementById("ram-pct-text").textContent = (pct * 100).toFixed(1) + "% LOAD LIMIT";
+  // Players
+  const playersEl = document.getElementById("rack-players");
+  if (playersEl) {
+    playersEl.innerHTML = s.players_online != null
+      ? `<span class="font-orbitron font-extrabold text-2xl text-neon-cyan glow-cyan-text">${s.players_online}</span><span class="text-xs text-slate-400">/ ${s.players_max != null ? s.players_max : "?"}</span>`
+      : `<span class="font-orbitron font-extrabold text-2xl text-slate-500">—</span>`;
+  }
+  const pc = document.getElementById("players-count");
+  if (pc) pc.textContent = s.players_online != null ? s.players_online : "0";
+  // LED bar (10 segments)
+  const led = document.getElementById("rack-led");
+  if (led) {
+    const segs = 10;
+    const lit = Math.round(pct * segs);
+    let html = "";
+    for (let i = 0; i < segs; i++) {
+      html += i < lit
+        ? `<span class="w-1.5 h-6 bg-neon-green shadow-[0_0_6px_#00ff88] rounded-xs"></span>`
+        : `<span class="w-1.5 h-6 bg-[#102438] rounded-xs"></span>`;
+    }
+    led.innerHTML = html;
+    document.getElementById("led-text").textContent = `${lit} OF ${segs} SEGMENTS`;
+  }
+  // TPS
   if (s.role !== "proxy") {
     try {
       const r = await api("GET", `/api/servers/${enc}/tps`);
       if (r.tps != null) {
-        if (!tpsGauge) tpsGauge = makeGauge(tpsBox, { label: "TPS (1m)", unit: "", min: 0, max: 20 });
-        tpsGauge.set(r.tps);
-        tpsBox.style.display = "";
-      } else { tpsBox.style.display = "none"; }
-    } catch (e) { tpsBox.style.display = "none"; }
-  } else { tpsBox.style.display = "none"; }
+        document.getElementById("srv-tps").textContent = `${r.tps.toFixed(1)} (${Math.round(r.tps/20*100)}%)`;
+      } else {
+        document.getElementById("srv-tps").textContent = "—";
+      }
+    } catch (e) { document.getElementById("srv-tps").textContent = "—"; }
+  }
 }
 
 // Console: live SSE log stream for local servers; RCON command terminal for
@@ -1503,6 +1769,6 @@ document.getElementById("geyser-btn").onclick = async () => {
 
 refreshHeader();
 setInterval(refreshHeader, 15000);
+
 </script>
-</body>
-</html>
+</body></html>
