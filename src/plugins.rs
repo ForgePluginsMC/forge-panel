@@ -26,6 +26,10 @@ pub struct ModrinthHit {
     pub downloads: u64,
     #[serde(default)]
     pub follows: u64,
+    #[serde(default)]
+    pub project_type: String,
+    #[serde(default)]
+    pub all_project_types: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -123,7 +127,15 @@ pub async fn modrinth_search(
         .cached_get(&key, CACHE_TTL, &full, MODRINTH_UA)
         .await?;
     let resp: ModrinthSearch = serde_json::from_str(&body).context("parsing modrinth search")?;
-    Ok((resp.hits, resp.total_hits))
+    // Modrinth's facet filtering is buggy — it returns wrong project types when
+    // combining project_type with categories. Filter in backend to be safe.
+    // Use all_project_types (a project can be both mod and plugin).
+    let hits: Vec<ModrinthHit> = resp
+        .hits
+        .into_iter()
+        .filter(|h| h.all_project_types.iter().any(|t| t == project_type))
+        .collect();
+    Ok((hits, resp.total_hits))
 }
 
 /// Live Modrinth category tags, filtered by project type.
