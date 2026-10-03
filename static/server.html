@@ -1152,12 +1152,16 @@ function playerModalHTML(info) {
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-3 border-t border-cyber-border/70 text-xs font-mono">
         <div class="md:col-span-3 flex items-center bg-cyber-slot border border-cyber-border rounded px-2">
           <span class="text-slate-500 mr-2 text-[11px]">GM:</span>
-          <select id="p-gamemode" class="w-full bg-transparent border-0 text-cyber-cyan py-1 px-1 focus:ring-0 text-xs font-mono cursor-pointer" style="background:#050b12;border:1px solid #234468;color:#00f0ff;">
-            <option class="bg-cyber-panel text-white" value="survival"${gmLower==='survival'?' selected':''}>Survival</option>
-            <option class="bg-cyber-panel text-white" value="creative"${gmLower==='creative'?' selected':''}>Creative</option>
-            <option class="bg-cyber-panel text-white" value="spectator"${gmLower==='spectator'?' selected':''}>Spectator</option>
-            <option class="bg-cyber-panel text-white" value="adventure"${gmLower==='adventure'?' selected':''}>Adventure</option>
-          </select>
+          <div class="cfg-dropdown" id="p-gamemode-wrap" style="flex:1;">
+            <div class="cfg-drop-btn" style="padding:4px 8px;font-size:11px;"><span id="p-gamemode-label">${gmLower}</span> <span>▼</span></div>
+            <div class="cfg-drop-list">
+              <div class="cfg-opt" data-val="survival">Survival</div>
+              <div class="cfg-opt" data-val="creative">Creative</div>
+              <div class="cfg-opt" data-val="adventure">Adventure</div>
+              <div class="cfg-opt" data-val="spectator">Spectator</div>
+            </div>
+            <input type="hidden" id="p-gamemode" value="${gmLower}">
+          </div>
           <button class="ml-1 bg-cyber-cyan/20 hover:bg-cyber-cyan hover:text-black text-cyber-cyan text-[10px] uppercase font-bold px-2 py-1 rounded transition-colors" data-act="gamemode">Set</button>
         </div>
         <div class="md:col-span-5 flex items-center bg-cyber-slot border border-cyber-border rounded px-2">
@@ -1301,6 +1305,23 @@ async function pcmd2(cmd1, cmd2, after) {
 function bindPlayerActions() {
   const n = curPlayer;
   const val = (id) => document.getElementById(id).value.trim();
+  // Wire up gamemode custom dropdown
+  const gmWrap = document.getElementById("p-gamemode-wrap");
+  if (gmWrap) {
+    const btn = gmWrap.querySelector(".cfg-drop-btn");
+    const label = document.getElementById("p-gamemode-label");
+    const hidden = document.getElementById("p-gamemode");
+    btn.onclick = (e) => { e.stopPropagation(); gmWrap.classList.toggle("open"); };
+    gmWrap.querySelectorAll(".cfg-opt").forEach(opt => {
+      opt.onclick = (e) => {
+        e.stopPropagation();
+        const v = opt.dataset.val;
+        label.textContent = v;
+        hidden.value = v;
+        gmWrap.classList.remove("open");
+      };
+    });
+  }
   const gone = () => {
     document.getElementById("player-modal").style.display = "none";
     curPlayer = null;
@@ -1943,9 +1964,30 @@ async function pluginDetail(key) {
     el.innerHTML = `<h3 style="margin-top:0">${esc(title)}</h3>
       <p class="muted">${esc(desc || "")}</p>
       <label>Version</label>
-      <select id="pv-select" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:8px 12px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;margin:8px 0;appearance:none;-webkit-appearance:none;">${versions.map(v => `<option value="${esc(v.id)}" style="background:#09111c;color:#e2e8f0;">${verLabel(v)}</option>`).join("")}</select>
+      <div class="cfg-dropdown" id="pv-wrap" style="margin:8px 0;">
+        <div class="cfg-drop-btn"><span id="pv-label">${verLabel(versions[0])}</span> <span>▼</span></div>
+        <div class="cfg-drop-list">${versions.map(v => `<div class="cfg-opt" data-val="${esc(v.id)}">${verLabel(v)}</div>`).join("")}</div>
+        <input type="hidden" id="pv-select" value="${esc(versions[0].id)}">
+      </div>
       <div style="margin-top:14px"><button id="pv-install" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-6 py-2.5 rounded-sm clip-tech-chamfer">INSTALL</button>
       <span class="small muted" id="pv-msg"></span></div>`;
+    // Wire up version dropdown
+    (() => {
+      const wrap = document.getElementById("pv-wrap");
+      if (!wrap) return;
+      const btn = wrap.querySelector(".cfg-drop-btn");
+      const label = document.getElementById("pv-label");
+      const hidden = document.getElementById("pv-select");
+      btn.onclick = (e) => { e.stopPropagation(); wrap.classList.toggle("open"); };
+      wrap.querySelectorAll(".cfg-opt").forEach(opt => {
+        opt.onclick = (e) => {
+          e.stopPropagation();
+          label.textContent = opt.textContent;
+          hidden.value = opt.dataset.val;
+          wrap.classList.remove("open");
+        };
+      });
+    })();
     document.getElementById("pv-install").onclick = async () => {
       const msg = document.getElementById("pv-msg");
       msg.textContent = "installing…";
