@@ -2,7 +2,7 @@
   <img src="assets/logo.webp" width="160" alt="forge-panel logo">
 </p>
 
-<h1 align="center">forge-panel</h1>
+<h1 align="center">Forge-Panel</h1>
 
 <p align="center"><i>Self-hosted Minecraft server management panel — AMP/FORK.gg-style control for your own boxes.</i></p>
 
