@@ -440,11 +440,22 @@ function invGrid(items, slots, cols) {
   return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, 1fr)">` +
     slots.map(s => {
       const it = bySlot[s];
+      const ghost = !it && SLOT_ICONS[s]
+        ? `<span class="slot-ghost">${SLOT_ICONS[s]}</span>` : "";
       return `<div class="inv-slot" title="${it ? esc(it.id) : ""}">` +
-        (it ? `<span class="inv-item">${esc(prettyItem(it.id))}</span><span class="inv-count">${it.count}</span>` : "") +
+        (it ? `<span class="inv-item">${esc(prettyItem(it.id))}</span><span class="inv-count">${it.count}</span>` : ghost) +
         `</div>`;
     }).join("") + `</div>`;
 }
+
+// Faint vanilla-style silhouettes for empty armor/offhand slots.
+const SLOT_ICONS = {
+  103: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3.5c-4.6 0-7.8 3.4-7.8 8V15h15.6v-3.5c0-4.6-3.2-8-7.8-8z"/><path d="M4.2 12.5h15.6"/></svg>`,
+  102: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3.5L4.5 7l2.3 2.3L8 17.5h8l1.2-8.2L19.5 7 15 3.5c-.9 1.3-2 1.9-3 1.9s-2.1-.6-3-1.9z"/></svg>`,
+  101: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8.5 3h7V10l-1 10.5h-2.4L11 10.5 9.9 20.5H7.5L6.5 10z"/></svg>`,
+  100: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.5 10.5h4V15l4.5 2v3.5h-8.5z"/><path d="M15.5 10.5h4V14l-4 1.8z"/></svg>`,
+  "-106": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2.5l7.5 2.8v5.4c0 4.9-3.2 8.3-7.5 10.3-4.3-2-7.5-5.4-7.5-10.3V5.3z"/></svg>`,
+};
 
 const GM_NAMES = { 0: "Survival", 1: "Creative", 2: "Adventure", 3: "Spectator" };
 

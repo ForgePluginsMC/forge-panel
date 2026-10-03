@@ -188,9 +188,12 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 .prow { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 10px; align-items: flex-end; }
 .prow input, .prow select { margin-right: 6px; }
 .inv-grid { display: grid; gap: 4px; }
-.inv-slot { aspect-ratio: 1; min-height: 44px; border: 1px solid var(--line); background: rgba(8, 11, 20, 0.85); position: relative; padding: 3px; overflow: hidden; }
+.inv-slot { aspect-ratio: 1; min-height: 44px; border: 1px solid var(--line); background: rgba(8, 11, 20, 0.85); position: relative; padding: 3px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .inv-slot .inv-item { font-size: 10.5px; line-height: 1.25; color: var(--text); display: block; word-break: break-word; }
 .inv-slot .inv-count { position: absolute; right: 4px; bottom: 2px; font-family: var(--font-m); font-size: 12px; font-weight: 700; color: var(--ember-hi); text-shadow: 0 0 6px rgba(255, 123, 47, 0.7); }
+/* faint ghost icons on empty armor/offhand slots (vanilla-style) */
+.slot-ghost { width: 62%; height: 62%; color: #46536e; opacity: 0.55; pointer-events: none; }
+.slot-ghost svg { width: 100%; height: 100%; display: block; }
 .badge.geyser { color: var(--green); border-color: rgba(57, 255, 122, 0.5); text-shadow: 0 0 8px rgba(57, 255, 122, 0.6); }
 
 input, select, textarea {

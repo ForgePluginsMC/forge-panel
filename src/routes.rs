@@ -12,9 +12,10 @@ use axum::{
     body::Body,
     extract::{Path, Query, State},
     http::{header, HeaderValue, StatusCode},
+    middleware::Next,
     response::{
         sse::{Event, KeepAlive, Sse},
-        Html, IntoResponse,
+        Html, IntoResponse, Response,
     },
     routing::{delete, get, post},
     Json, Router,
@@ -57,28 +58,46 @@ fn java_for(state: &Arc<AppState>, cfg: &ServerConfig) -> String {
 // Pages (embedded HTML)
 // ---------------------------------------------------------------------------
 
-async fn index_page() -> Html<&'static str> {
-    Html(include_str!("../static/index.html"))
+async fn index_page() -> impl IntoResponse {
+    (
+        [(header::CACHE_CONTROL, "no-store")],
+        Html(include_str!("../static/index.html")),
+    )
 }
-async fn server_page() -> Html<&'static str> {
-    Html(include_str!("../static/server.html"))
+async fn server_page() -> impl IntoResponse {
+    (
+        [(header::CACHE_CONTROL, "no-store")],
+        Html(include_str!("../static/server.html")),
+    )
 }
-async fn install_page() -> Html<&'static str> {
-    Html(include_str!("../static/install.html"))
+async fn install_page() -> impl IntoResponse {
+    (
+        [(header::CACHE_CONTROL, "no-store")],
+        Html(include_str!("../static/install.html")),
+    )
 }
-async fn login_page() -> Html<&'static str> {
-    Html(include_str!("../static/login.html"))
+async fn login_page() -> impl IntoResponse {
+    (
+        [(header::CACHE_CONTROL, "no-store")],
+        Html(include_str!("../static/login.html")),
+    )
 }
 
 async fn style_css() -> impl IntoResponse {
     (
-        [(header::CONTENT_TYPE, "text/css")],
+        [
+            (header::CONTENT_TYPE, "text/css"),
+            (header::CACHE_CONTROL, "no-store"),
+        ],
         include_str!("../static/style.css"),
     )
 }
 async fn app_js() -> impl IntoResponse {
     (
-        [(header::CONTENT_TYPE, "application/javascript")],
+        [
+            (header::CONTENT_TYPE, "application/javascript"),
+            (header::CACHE_CONTROL, "no-store"),
+        ],
         include_str!("../static/app.js"),
     )
 }
@@ -1344,6 +1363,20 @@ async fn plugins_install(
     Ok(Json(serde_json::json!({ "ok": true, "message": message })))
 }
 
+// ---------------------------------------------------------------------------
+// Response helpers
+
+/// Middleware: never let browsers/proxies cache API or page responses.
+async fn no_cache_headers(
+    req: axum::extract::Request,
+    next: Next,
+) -> Response {
+    let mut res = next.run(req).await;
+    res.headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    res
+}
+
 pub fn router(state: Arc<AppState>) -> Router {
     let protected = Router::new()
         .route("/", get(index_page))
@@ -1394,7 +1427,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             auth::require_auth,
-        ));
+        ))
+        .layer(axum::middleware::from_fn(no_cache_headers));
 
     let public = Router::new()
         .route("/login", get(login_page))
