@@ -196,13 +196,13 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 .inv-slot .inv-item { font-size: 9px; line-height: 1.2; color: var(--text); display: block; word-break: break-word; text-align: center; max-height: 2.4em; overflow: hidden; }
 /* vanilla-style inventory layout */
 .mc-inv { max-width: 560px; }
-.mc-armor-row { display: flex; align-items: stretch; gap: 8px; }
-.mc-armor-col { display: grid; gap: 4px; grid-template-rows: 1fr 1fr; }
-.mc-armor-col .inv-slot { min-height: 56px; }
-.mc-char { height: 120px; image-rendering: pixelated; background: rgba(8, 11, 20, 0.85); border: 1px solid var(--line); padding: 4px; }
+.mc-armor-row { display: grid; grid-template-columns: 64px 96px 64px; gap: 8px; align-items: start; justify-content: start; }
+.mc-armor-col { display: grid; gap: 4px; }
+.mc-armor-col .inv-slot { width: 64px; height: 64px; min-height: 64px; }
+.mc-char { width: 96px; height: 136px; image-rendering: pixelated; background: rgba(8, 11, 20, 0.85); border: 1px solid var(--line); object-fit: contain; }
 .mc-hotbar-row { display: flex; gap: 4px; align-items: stretch; }
+.mc-hotbar-row > .inv-slot { width: 56px; min-width: 56px; }
 .mc-hotbar-row .inv-grid { flex: 1; }
-.mc-hotbar-row .inv-slot { min-height: 44px; }
 .inv-delete { cursor: pointer; font-size: 20px; font-weight: 700; color: #ff5d5d; background: rgba(40, 8, 12, 0.9); min-width: 48px; }
 .inv-delete:hover { background: rgba(80, 12, 18, 0.95); color: #ff8080; }
 .slot-ghost { width: 62%; height: 62%; object-fit: contain; image-rendering: pixelated; opacity: 0.6; pointer-events: none; }
