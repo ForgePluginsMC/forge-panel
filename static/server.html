@@ -32,7 +32,7 @@
       }
     }
   </script>
-<style>
+<style data-purpose="cyber-grid-background">
     body {
       background-color: #04080e;
       background-image: 
@@ -41,16 +41,16 @@
       background-size: 32px 32px;
       color: #b5c7db;
     }
+  </style>
+<style data-purpose="hud-brackets-and-borders">
     .hud-bracket-container { position: relative; }
     .hud-bracket-container::before {
-      content: ''; position: absolute; top: -1px; left: -1px;
-      width: 10px; height: 10px;
+      content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
       border-top: 2px solid #ff9900; border-left: 2px solid #ff9900;
       pointer-events: none; z-index: 10;
     }
     .hud-bracket-container::after {
-      content: ''; position: absolute; bottom: -1px; right: -1px;
-      width: 10px; height: 10px;
+      content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
       border-bottom: 2px solid #ff9900; border-right: 2px solid #ff9900;
       pointer-events: none; z-index: 10;
     }
@@ -62,19 +62,25 @@
     .clip-tab-cut {
       clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
     }
+  </style>
+<style data-purpose="scrollbars-and-glow">
     .terminal-scroll::-webkit-scrollbar { width: 7px; }
     .terminal-scroll::-webkit-scrollbar-track { background: #060c14; }
     .terminal-scroll::-webkit-scrollbar-thumb { background: #173250; border-radius: 2px; }
     .terminal-scroll::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
     .scanlines-overlay {
-      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.35));
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.35));
       background-size: 100% 4px; pointer-events: none;
     }
     .glow-cyan-text { text-shadow: 0 0 10px rgba(0, 240, 255, 0.7); }
-    /* Tab content styling */
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    /* Preserve functional element styles */
+    .glow-cyan-box { box-shadow: 0 0 15px rgba(0, 240, 255, 0.25); }
+    .glow-amber-box { box-shadow: 0 0 18px rgba(255, 153, 0, 0.3); }
+  </style>
+<style>
+    /* Functional overrides - keep hidden by default, JS controls visibility */
+    .tab-content { display: none; }
+    .tab-content.active { display: flex; flex-direction: column; }
+    #tab-players.active, #tab-files.active, #tab-backups.active, #tab-plugins.active, #tab-settings.active { display: block; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: monospace; margin-right: 4px; }
     .badge.proxy { background: #1a2a3a; color: #00f0ff; border: 1px solid #00f0ff44; }
     .badge.remote { background: #2a1a3a; color: #c084fc; border: 1px solid #c084fc44; }
@@ -84,8 +90,6 @@
     th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
     .btn { padding: 6px 12px; background: #0d1826; border: 1px solid #234468; color: #b5c7db; border-radius: 4px; cursor: pointer; font-size: 12px; }
     .btn:hover { border-color: #00f0ff; color: #00f0ff; }
-    input[type="text"], input:not([type]) { background: #050b12; border: 1px solid #15293f; color: #e2e8f0; padding: 8px 12px; border-radius: 4px; }
-    input:focus { outline: none; border-color: #00f0ff; }
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
     .modal .box { background: #09111c; border: 1px solid #234468; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
     .modal .box.wide { max-width: 900px; }
@@ -94,23 +98,26 @@
 <body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">
 <header class="w-full bg-[#070e17] border-b border-panel-border px-4 py-2.5 flex items-center justify-between sticky top-0 z-50 shadow-lg">
 <div class="flex items-center space-x-3">
-<div class="w-8 h-8 rounded border border-neon-amber/50 bg-neon-amber/10 flex items-center justify-center text-neon-amber">
-<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24"><path d="M12 2C9.5 6 12 8.5 10 11.5C9 10 8 9.5 8 9.5C6 12.5 7 16 9 18C7.5 18 6 16.5 6 15C4.5 17.5 5 20.5 8 22C11 23.5 16 23 18 19C20 15 17 11 15 10C15 10 15.5 12 14 13C12.5 14 11 12 12 9C12.5 7.5 13.5 5.5 12 2Z"></path></svg>
+<div class="w-8 h-8 rounded border border-neon-amber/50 bg-neon-amber/10 flex items-center justify-center text-neon-amber shadow-[0_0_10px_rgba(255,153,0,0.3)]">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2C9.5 6 12 8.5 10 11.5C9 10 8 9.5 8 9.5C6 12.5 7 16 9 18C7.5 18 6 16.5 6 15C4.5 17.5 5 20.5 8 22C11 23.5 16 23 18 19C20 15 17 11 15 10C15 10 15.5 12 14 13C12.5 14 11 12 12 9C12.5 7.5 13.5 5.5 12 2Z"></path>
+</svg>
 </div>
 <div class="flex items-baseline space-x-2">
 <span class="font-orbitron font-extrabold tracking-widest text-lg text-white">FORGE-PANEL</span>
 <span class="text-neon-cyan/60 font-bold text-sm">/</span>
-<span class="font-orbitron font-bold text-sm tracking-wider text-neon-cyan glow-cyan-text" id="hdr-server-name">SERVER</span><span id="srv-title" style="display:none"></span>
+<span class="font-orbitron font-bold text-sm tracking-wider text-neon-cyan glow-cyan-text" id="hdr-server-name">VANILLA</span>
+<span id="srv-title" style="display:none"></span>
 </div>
 <div class="ml-2 flex items-center space-x-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-neon-green/30 text-[11px] text-neon-green" id="hdr-status">
-<span class="w-2 h-2 rounded-full bg-neon-green animate-pulse"></span>
-<span class="tracking-wider uppercase font-semibold" id="hdr-status-text">ONLINE</span>
+<span class="w-2 h-2 rounded-full bg-neon-green animate-pulse shadow-[0_0_8px_#00ff88]"></span>
+<span class="tracking-wider uppercase font-semibold" id="hdr-status-text">ONLINE: 25571</span>
 </div>
 </div>
 <nav class="hidden lg:flex items-center space-x-1 tracking-wider text-xs">
 <a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="/">Dashboard</a>
 <a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="#">Nodes</a>
-<a class="px-4 py-1.5 rounded-sm border border-neon-cyan text-neon-cyan bg-neon-cyan/10 font-bold uppercase" href="#">Terminal</a>
+<a class="px-4 py-1.5 rounded-sm border border-neon-cyan text-neon-cyan bg-neon-cyan/10 font-bold shadow-[0_0_12px_rgba(0,240,255,0.25)] uppercase" href="#">Terminal</a>
 <a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="/install">Install</a>
 </nav>
 <div class="flex items-center space-x-4">
@@ -125,20 +132,20 @@
 <main class="flex-1 max-w-[1720px] w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
 <div id="err" class="text-neon-crimson text-sm font-mono"></div>
 
-<section class="hud-bracket-container bg-[#08111c] border border-panel-border p-4 rounded-sm">
+<section class="hud-bracket-container bg-[#08111c] border border-panel-border p-4 rounded-sm" data-purpose="server-telemetry-card">
 <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-center">
 <div class="xl:col-span-3 flex flex-col justify-center border-b xl:border-b-0 xl:border-r border-panel-border pb-4 xl:pb-0 pr-0 xl:pr-4">
 <div class="flex items-center space-x-2.5">
-<span id="srv-lamp"></span>
-<h1 class="font-orbitron font-extrabold text-2xl tracking-wider text-white" id="srv-name">SERVER</h1>
-<span class="px-2 py-0.5 text-[11px] font-mono bg-panel border border-neon-cyan/40 text-neon-cyan rounded" id="srv-version">—</span>
+<span id="srv-lamp" class="w-3.5 h-3.5 rounded-full bg-neon-green shadow-[0_0_12px_#00ff88] border border-emerald-300"></span>
+<h1 class="font-orbitron font-extrabold text-2xl tracking-wider text-white" id="srv-name">VANILLA</h1>
+<span class="px-2 py-0.5 text-[11px] font-mono bg-panel border border-neon-cyan/40 text-neon-cyan rounded" id="srv-version">Paper 1.20.4</span>
 </div>
 <div class="mt-2 text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-<span>BIND: <strong class="text-neon-cyan font-normal" id="srv-bind">—</strong></span>
-<span>TPS: <strong class="text-neon-green font-normal" id="srv-tps">—</strong></span>
-<span>UPTIME: <strong class="text-slate-300 font-normal" id="srv-uptime">—</strong></span>
+<span>BIND: <strong class="text-neon-cyan font-normal" id="srv-bind">0.0.0.0:25571</strong></span>
+<span>TPS: <strong class="text-neon-green font-normal" id="srv-tps">20.0 (100%)</strong></span>
+<span>UPTIME: <strong class="text-slate-300 font-normal" id="srv-uptime">14h 28m</strong></span>
 </div>
-<div class="mt-2 text-[11px] text-slate-500" id="srv-meta">—</div>
+<div class="mt-2 text-[11px] text-slate-500" id="srv-meta">Runtime Engine: OpenJDK 64-Bit Server VM</div>
 <div class="mt-1" id="srv-badges"></div>
 </div>
 
@@ -146,19 +153,19 @@
 <div class="relative w-36 h-28 flex flex-col items-center justify-end">
 <svg class="w-36 h-24 transform -rotate-180" viewbox="0 0 120 70">
 <path d="M 15 65 A 45 45 0 0 1 105 65" fill="none" stroke="#162c46" stroke-linecap="round" stroke-width="8"></path>
-<path id="ram-arc" class="filter drop-shadow-[0_0_6px_rgba(0,240,255,0.7)]" d="M 15 65 A 45 45 0 0 1 105 65" fill="none" stroke="#00f0ff" stroke-dasharray="141.3" stroke-dashoffset="141.3" stroke-linecap="round" stroke-width="8"></path>
-<line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="60" y1="65" y2="28"></line>
+<path id="ram-arc" class="filter drop-shadow-[0_0_6px_rgba(0,240,255,0.7)]" d="M 15 65 A 45 45 0 0 1 105 65" fill="none" stroke="#00f0ff" stroke-dasharray="141.3" stroke-dashoffset="85" stroke-linecap="round" stroke-width="8"></path>
+<line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="78" y1="65" y2="28"></line>
 <circle cx="60" cy="65" fill="#ff9900" r="4.5"></circle>
 </svg>
 <div class="text-center absolute bottom-1 flex flex-col items-center">
-<span class="font-orbitron font-extrabold text-lg text-neon-amber tracking-wider leading-none" id="ram-use-text">—</span>
+<span class="font-orbitron font-extrabold text-lg text-neon-amber tracking-wider leading-none" id="ram-use-text">1,352 MB</span>
 <span class="text-[10px] uppercase text-slate-400 tracking-widest mt-1">RAM USE</span>
 </div>
 </div>
 <div class="text-xs space-y-1">
 <div class="text-slate-400">POOL ALLOCATED</div>
-<div class="text-neon-cyan font-bold text-sm" id="ram-alloc-text">—</div>
-<div class="text-[10px] text-slate-500" id="ram-pct-text">—</div>
+<div class="text-neon-cyan font-bold text-sm" id="ram-alloc-text">4,096 MB</div>
+<div class="text-[10px] text-slate-500" id="ram-pct-text">33.0% LOAD LIMIT</div>
 </div>
 </div>
 
@@ -166,7 +173,8 @@
 <div class="flex flex-col items-center">
 <span class="text-[11px] font-orbitron tracking-widest text-slate-400 mb-1.5 uppercase">PLAYERS</span>
 <div class="flex items-baseline space-x-1.5 bg-[#050c14] px-4 py-1.5 border border-panel-border-bright rounded" id="rack-players">
-<span class="font-orbitron font-extrabold text-2xl text-neon-cyan glow-cyan-text">—</span>
+<span class="font-orbitron font-extrabold text-2xl text-neon-cyan glow-cyan-text">0</span>
+<span class="text-xs text-slate-400">/ 20</span>
 </div>
 <span class="text-[10px] text-slate-500 mt-1">WHITELIST: OFF</span>
 </div>
@@ -175,22 +183,50 @@
 <span class="text-[11px] font-orbitron tracking-widest text-slate-400 uppercase">RAM LED</span>
 <span class="text-[9px] text-neon-green">ACTIVE</span>
 </div>
-<div class="flex space-x-1 p-2 bg-[#050c14] border border-panel-border-bright rounded" id="rack-led"></div>
-<span class="text-[10px] text-slate-500 mt-1" id="led-text">—</span>
+<div class="flex space-x-1 p-2 bg-[#050c14] border border-panel-border-bright rounded" id="rack-led">
+<span class="w-1.5 h-6 bg-neon-green shadow-[0_0_6px_#00ff88] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-neon-green shadow-[0_0_6px_#00ff88] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-neon-green shadow-[0_0_6px_#00ff88] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-neon-green shadow-[0_0_6px_#00ff88] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-neon-green shadow-[0_0_6px_#00ff88] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-neon-green/80 shadow-[0_0_6px_#00ff88] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-[#102438] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-[#102438] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-[#102438] rounded-xs"></span>
+<span class="w-1.5 h-6 bg-[#102438] rounded-xs"></span>
+</div>
+<span class="text-[10px] text-slate-500 mt-1" id="led-text">6 OF 10 SEGMENTS</span>
 </div>
 </div>
 
 <div class="xl:col-span-3 flex flex-col sm:flex-row xl:flex-col gap-2.5 justify-center" id="srv-actions">
+<div class="flex items-center gap-2 w-full">
+<button id="a-restart" class="flex-1 py-2.5 px-3 bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider rounded-sm shadow-[0_0_15px_rgba(255,153,0,0.4)] clip-tech-chamfer transition-transform active:scale-95 text-center flex items-center justify-center space-x-1.5">
+<svg class="w-4 h-4 fill-black" viewbox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"></path></svg>
+<span>RESTART</span>
+</button>
+<button id="a-stop" class="flex-1 py-2.5 px-3 bg-neon-crimson hover:bg-rose-600 text-white font-orbitron font-extrabold tracking-wider rounded-sm shadow-[0_0_15px_rgba(255,42,95,0.4)] clip-tech-chamfer transition-transform active:scale-95 text-center flex items-center justify-center space-x-1.5">
+<svg class="w-4 h-4 fill-white" viewbox="0 0 24 24"><path d="M6 6h12v12H6z"></path></svg>
+<span>STOP</span>
+</button>
+</div>
+<div class="flex items-center space-x-2">
+<button id="a-kill" class="flex-1 py-1.5 px-2 bg-panel border border-neon-crimson/50 hover:border-neon-crimson text-neon-crimson hover:bg-neon-crimson/10 text-xs font-mono uppercase tracking-wider rounded transition-colors">KILL INSTANCE</button>
+<button id="a-backup" class="flex-1 py-1.5 px-2 bg-panel border border-panel-border-bright hover:border-neon-cyan text-slate-300 hover:text-neon-cyan text-xs font-mono uppercase tracking-wider rounded transition-colors">BACKUP NOW</button>
+</div>
 </div>
 </div>
 </section>
 
 <nav class="flex items-center space-x-2 border-b border-panel-border pb-1 overflow-x-auto" id="tabs">
-<button data-tab="console" class="flex items-center space-x-2 px-5 py-2 text-xs font-orbitron font-bold tracking-wider uppercase text-neon-cyan bg-neon-cyan/10 border-t-2 border-l border-r border-neon-cyan rounded-t clip-tab-cut">
-<span>CONSOLE</span><span class="w-2 h-2 rounded-full bg-neon-green animate-ping"></span>
+<button data-tab="console" class="flex items-center space-x-2 px-5 py-2 text-xs font-orbitron font-bold tracking-wider uppercase text-neon-cyan bg-neon-cyan/10 border-t-2 border-l border-r border-neon-cyan rounded-t clip-tab-cut shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24"><path d="M20 19V7H4v12h16m0-16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16m-7 14v-2h5v2h-5m-3.42-4L5.5 17.08l1.42 1.42 5.5-5.5-5.5-5.5L5.5 8.92 9.58 13z"></path></svg>
+<span>CONSOLE</span>
+<span class="w-2 h-2 rounded-full bg-neon-green animate-ping"></span>
 </button>
 <button data-tab="players" class="flex items-center space-x-2 px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">
-<span>PLAYERS</span><span class="px-1.5 py-0.2 bg-panel-card text-[10px] text-slate-300 rounded border border-panel-border" id="players-count">0</span>
+<span>PLAYERS</span>
+<span class="px-1.5 py-0.2 bg-panel-card text-[10px] text-slate-300 rounded border border-panel-border" id="players-count">0</span>
 </button>
 <button data-tab="files" class="px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">FILES</button>
 <button data-tab="backups" class="flex items-center space-x-1.5 px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">
@@ -200,7 +236,7 @@
 <button data-tab="settings" class="px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors">SETTINGS</button>
 </nav>
 
-<section class="flex-1 flex flex-col bg-[#070e17] border border-panel-border rounded-sm hud-bracket-container hud-bracket-cyan min-h-[520px] shadow-2xl relative overflow-hidden tab-panel active" id="tab-console">
+<section class="flex-1 flex flex-col bg-[#070e17] border border-panel-border rounded-sm hud-bracket-container hud-bracket-cyan min-h-[520px] shadow-2xl relative overflow-hidden tab-content active" id="tab-console">
 <div class="px-4 py-2.5 bg-[#091320] border-b border-panel-border flex flex-wrap items-center justify-between gap-3 text-xs">
 <div class="flex items-center space-x-3">
 <span class="font-orbitron font-semibold tracking-wider text-xs uppercase text-slate-200 flex items-center gap-2">
@@ -220,19 +256,26 @@ CONSOLE STREAM // ACTIVE SESSION
 </div>
 <button class="p-1 px-2.5 bg-panel hover:bg-slate-800 text-slate-300 border border-panel-border rounded text-[11px] uppercase font-mono" title="Clear Console" id="clear-log">Clear</button>
 <button class="p-1 px-2.5 bg-panel hover:bg-slate-800 text-neon-cyan border border-neon-cyan/40 rounded text-[11px] uppercase font-mono flex items-center space-x-1" title="Download Full Log" id="download-log">
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"></path></svg>
 <span>Log</span>
 </button>
 </div>
 </div>
-<div class="flex-1 p-4 overflow-y-auto terminal-scroll font-code text-xs md:text-[13px] leading-relaxed relative bg-[#04080e]/95" id="console-log" style="max-height: 60vh;">
+<div class="flex-1 p-4 overflow-y-auto terminal-scroll font-code text-xs md:text-[13px] leading-relaxed relative bg-[#04080e]/95 space-y-1" id="console-log" style="min-height: 400px; max-height: 60vh;">
 <div class="scanlines-overlay absolute inset-0 pointer-events-none"></div>
 </div>
 <div class="p-3 bg-[#08121f] border-t border-panel-border flex items-center gap-2">
 <div class="text-neon-amber font-orbitron font-bold px-2 select-none">&gt;_</div>
 <div class="flex-1 relative">
-<input class="w-full bg-[#040910] border border-panel-border-bright rounded px-3.5 py-2.5 text-sm font-code text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50" id="cmd-input" placeholder="console command... (e.g. say Hello World, op player, tp, gamerule)" type="text" autocomplete="off"/>
+<input class="w-full bg-[#040910] border border-panel-border-bright rounded px-3.5 py-2.5 text-sm font-code text-white placeholder-slate-600 focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan/50 shadow-inner" id="cmd-input" placeholder="console command... (e.g. say Hello World, op player, tp, gamerule)" type="text" autocomplete="off"/>
+<div class="absolute right-3 top-2.5 text-[10px] text-slate-500 hidden sm:flex items-center space-x-1.5">
+<kbd class="px-1.5 py-0.5 bg-panel-card border border-panel-border rounded text-slate-400">TAB</kbd>
+<span>complete</span>
+<kbd class="px-1.5 py-0.5 bg-panel-card border border-panel-border rounded text-slate-400">↑↓</kbd>
+<span>history</span>
 </div>
-<button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider px-6 py-2.5 rounded-sm clip-tech-chamfer flex items-center space-x-2" id="cmd-send">
+</div>
+<button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider px-6 py-2.5 rounded-sm clip-tech-chamfer shadow-[0_0_15px_rgba(255,153,0,0.4)] transition-all active:scale-95 flex items-center space-x-2 cursor-pointer" id="cmd-send">
 <span>SEND</span>
 <svg class="w-4 h-4 fill-black" viewbox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
 </button>
@@ -241,7 +284,7 @@ CONSOLE STREAM // ACTIVE SESSION
 <div id="paction-out"></div>
 </section>
 
-<section class="tab-panel" id="tab-players">
+<div class="tab-content" id="tab-players">
 <div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
 <h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">PLAYERS</h3>
 <div id="players-list" class="text-slate-400">loading…</div>
@@ -250,7 +293,7 @@ CONSOLE STREAM // ACTIVE SESSION
 <h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">BANNED</h3>
 <div id="banned-list"></div>
 </div>
-</section>
+</div>
 
 <div class="modal" id="player-modal" style="display:none">
 <div class="box wide">
@@ -259,14 +302,14 @@ CONSOLE STREAM // ACTIVE SESSION
 </div>
 </div>
 
-<section class="tab-panel" id="tab-files">
+<div class="tab-content" id="tab-files">
 <div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
 <h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">FILES <span class="text-slate-500 font-mono text-xs" id="files-path"></span></h3>
 <div class="overflow-x-auto">
 <table><thead><tr><th>Name</th><th>Size</th><th></th></tr></thead><tbody id="files-body"></tbody></table>
 </div>
 </div>
-</section>
+</div>
 
 <div class="modal" id="file-modal" style="display:none">
 <div class="box wide">
@@ -286,7 +329,7 @@ CONSOLE STREAM // ACTIVE SESSION
 </div>
 </div>
 
-<section class="tab-panel" id="tab-backups">
+<div class="tab-content" id="tab-backups">
 <div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
 <h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">BACKUPS</h3>
 <button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer" id="backup-btn">BACKUP</button>
@@ -295,9 +338,9 @@ CONSOLE STREAM // ACTIVE SESSION
 <table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody id="backups-body"></tbody></table>
 </div>
 </div>
-</section>
+</div>
 
-<section class="tab-panel" id="tab-plugins">
+<div class="tab-content" id="tab-plugins">
 <div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container mb-4">
 <h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">INSTALLED PLUGINS</h3>
 <div class="overflow-x-auto">
@@ -307,7 +350,7 @@ CONSOLE STREAM // ACTIVE SESSION
 <div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container">
 <h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">PLUGIN BROWSER</h3>
 <div class="flex flex-wrap gap-2 mb-4">
-<input id="plugin-q" placeholder="search plugins…" class="flex-1 min-w-[200px]"/>
+<input id="plugin-q" placeholder="search plugins…" class="flex-1 min-w-[200px] bg-[#050b12] border border-panel-border rounded px-3 py-2 text-sm"/>
 <button class="btn" id="plugin-search">Search</button>
 <button class="btn" id="plugin-trending">Trending</button>
 </div>
@@ -321,7 +364,7 @@ CONSOLE STREAM // ACTIVE SESSION
 </div>
 </div>
 </div>
-</section>
+</div>
 
 <div class="modal" id="plugin-modal" style="display:none">
 <div class="box">
@@ -330,7 +373,7 @@ CONSOLE STREAM // ACTIVE SESSION
 </div>
 </div>
 
-<section class="tab-panel" id="tab-settings">
+<div class="tab-content" id="tab-settings">
 <div class="bg-[#08111c] border border-panel-border rounded-sm p-4 hud-bracket-container mb-4">
 <h3 class="font-orbitron font-bold text-sm tracking-wider text-white mb-3">SETTINGS</h3>
 <div class="text-xs text-slate-400 mb-2">Heap allocation (MB)</div>
@@ -347,7 +390,7 @@ CONSOLE STREAM // ACTIVE SESSION
 </div>
 </div>
 <label class="text-xs text-slate-400 block mb-1">Behind proxy (name of a proxy server, empty = none)</label>
-<input id="set-proxy" placeholder="" class="w-full max-w-md mb-4"/>
+<input id="set-proxy" placeholder="" class="w-full max-w-md mb-4 bg-[#050b12] border border-panel-border rounded px-3 py-2 text-sm"/>
 <div><button class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer" id="settings-save">SAVE</button>
 <span class="text-xs text-slate-500 ml-2" id="settings-msg"></span></div>
 </div>
@@ -360,7 +403,7 @@ CONSOLE STREAM // ACTIVE SESSION
 <button class="btn text-xs" id="pv-install-btn">Install ViaVersion</button>
 </div>
 </div>
-</section>
+</div>
 
 </main>
 
@@ -376,7 +419,7 @@ CONSOLE STREAM // ACTIVE SESSION
 <span class="hidden sm:inline">HOST: <strong class="text-slate-300 font-normal">node-us-east-metal04</strong></span>
 </div>
 <div class="flex items-center space-x-4 mt-1 sm:mt-0 text-[11px]">
-<div>LATENCY: <span class="text-neon-green font-mono" id="latency">—</span></div>
+<div>LATENCY: <span class="text-neon-green font-mono" id="latency">16ms</span></div>
 <div class="hidden md:inline text-panel-border-bright">|</div>
 <div class="hidden md:inline">MEMORY LEAK GUARD: <span class="text-neon-cyan">ACTIVE</span></div>
 <div class="text-panel-border-bright">|</div>
@@ -395,21 +438,37 @@ let curPath = "";
 let psrc = "plugin";
 let ramGauge = null, tpsGauge = null, headerInit = false;
 
-// Tabs
-const TAB_ACTIVE = ["text-neon-cyan", "bg-neon-cyan/10", "border-neon-cyan"];
-const TAB_INACTIVE = ["text-slate-400", "border-transparent"];
+// Tabs - reference HUD style
 document.querySelectorAll("#tabs button").forEach(b => {
   b.onclick = () => {
+    // Reset all tabs to inactive style
     document.querySelectorAll("#tabs button").forEach(x => {
-      x.classList.remove(...TAB_ACTIVE);
-      if (!x.classList.contains("text-slate-400")) x.classList.add("text-slate-400");
+      x.className = "px-5 py-2 text-xs font-orbitron font-medium tracking-wider uppercase text-slate-400 hover:text-white border-b-2 border-transparent hover:border-slate-500 transition-colors";
+      // Keep the players count badge and backups dot
+      if (x.dataset.tab === "players") {
+        x.innerHTML = `<span>PLAYERS</span><span class="px-1.5 py-0.2 bg-panel-card text-[10px] text-slate-300 rounded border border-panel-border" id="players-count">${document.getElementById("players-count")?.textContent || "0"}</span>`;
+      } else if (x.dataset.tab === "backups") {
+        x.innerHTML = `<span>BACKUPS</span><span class="w-1.5 h-1.5 rounded-full bg-neon-cyan"></span>`;
+      } else if (x.dataset.tab === "console") {
+        x.innerHTML = `<span>CONSOLE</span>`;
+      } else {
+        x.innerHTML = `<span>${x.dataset.tab.toUpperCase()}</span>`;
+      }
     });
-    b.classList.remove(...TAB_INACTIVE);
-    b.classList.add(...TAB_ACTIVE);
+    // Set active tab style (console has special style with icon)
+    if (b.dataset.tab === "console") {
+      b.className = "flex items-center space-x-2 px-5 py-2 text-xs font-orbitron font-bold tracking-wider uppercase text-neon-cyan bg-neon-cyan/10 border-t-2 border-l border-r border-neon-cyan rounded-t clip-tab-cut shadow-[0_0_10px_rgba(0,240,255,0.2)]";
+      b.innerHTML = `<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24"><path d="M20 19V7H4v12h16m0-16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16m-7 14v-2h5v2h-5m-3.42-4L5.5 17.08l1.42 1.42 5.5-5.5-5.5-5.5L5.5 8.92 9.58 13z"></path></svg><span>CONSOLE</span><span class="w-2 h-2 rounded-full bg-neon-green animate-ping"></span>`;
+    } else {
+      b.className = "flex items-center space-x-2 px-5 py-2 text-xs font-orbitron font-bold tracking-wider uppercase text-neon-cyan bg-neon-cyan/10 border-t-2 border-l border-r border-neon-cyan rounded-t clip-tab-cut shadow-[0_0_10px_rgba(0,240,255,0.2)]";
+      const label = b.dataset.tab.toUpperCase();
+      const badge = b.dataset.tab === "players" ? `<span class="px-1.5 py-0.2 bg-panel-card text-[10px] text-slate-300 rounded border border-panel-border" id="players-count">${document.getElementById("players-count")?.textContent || "0"}</span>` : "";
+      b.innerHTML = `<span>${label}</span>${badge}`;
+    }
     ["console","players","files","backups","plugins","settings"].forEach(t => {
       const el = document.getElementById("tab-" + t);
-      if (t === b.dataset.tab) { el.classList.add("active"); el.style.display = ""; }
-      else { el.classList.remove("active"); el.style.display = "none"; }
+      if (t === b.dataset.tab) { el.classList.add("active"); }
+      else { el.classList.remove("active"); }
     });
     if (b.dataset.tab === "players") loadPlayers();
     if (b.dataset.tab === "files") loadFiles("");
