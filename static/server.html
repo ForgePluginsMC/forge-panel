@@ -190,6 +190,15 @@
     .cfg-opt:hover { background: #15293f; }
     .cfg-opt.sel { color: #00f0ff; background: #0a1a2a; }
 
+
+    /* Player list grid - fills horizontal space */
+    #players-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .player-row { display: flex; align-items: center; gap: 10px; background: #0a1420; border: 1px solid #1e3a52; border-radius: 6px; padding: 10px 12px; cursor: pointer; transition: border-color 0.15s; }
+    .player-row:hover { border-color: #00f0ff; }
+    .player-row img { border-radius: 4px; flex-shrink: 0; width: 36px; height: 36px; }
+    .player-row .pname { font-family: monospace; font-size: 13px; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .player-row .muted.small { color: #00f0ff; font-size: 14px; flex-shrink: 0; }
+
 </style>
 </head>
 <body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">
