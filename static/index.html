@@ -129,8 +129,6 @@ body { background-color:#080c14; background-image:linear-gradient(to right,rgba(
 
 <script src="/static/app.js?v=2"></script>
 <script>
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fmtMB = mb => mb >= 1024 ? (mb/1024).toFixed(1) + " GB" : Math.round(mb) + " MB";
 
 async function load() {
   const err = document.getElementById("err");
