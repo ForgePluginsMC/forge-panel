@@ -229,7 +229,7 @@ async function load() {
             <span class="font-mono text-xs text-cyber-amber font-semibold">:${s.port}</span></div>
           </div>
           <div class="text-right"><span class="px-2.5 py-1 bg-cyber-void border border-slate-700 rounded text-xs font-mono text-slate-300">${esc([s.server_type, s.mc_version].filter(Boolean).join(" ") || "")}</span>
-          ${tps ? `<span class="block text-[10px] font-mono text-emerald-400 mt-1">${tps}</span>` : ""}</div>
+          ${s.running ? `<span data-tps-badge="${esc(s.name)}" class="block text-[10px] font-mono text-emerald-400 mt-1">${tps}</span>` : ""}</div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
           <div class="bg-cyber-surface/90 border border-slate-800 p-3.5 rounded">
@@ -245,6 +245,15 @@ async function load() {
         <div class="flex flex-wrap items-center gap-3 pt-2">${actions}</div>
       </article>`;
     }).join("");
+    // Fetch TPS for running servers (updates badges async)
+    servers.filter(s => s.running && !s.remote).forEach(s => {
+      api("GET", `/api/servers/${encodeURIComponent(s.name)}/tps`).then(d => {
+        if (d.tps != null) {
+          const badge = document.querySelector(`[data-tps-badge="${CSS.escape(s.name)}"]`);
+          if (badge) badge.textContent = `TPS ${d.tps.toFixed(1)} (${Math.round(d.tps/20*100)}%)`;
+        }
+      }).catch(() => {});
+    });
   } catch (e) { err.textContent = e.message; }
 }
 
