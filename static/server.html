@@ -895,16 +895,16 @@ function appendLine(t) {
   if (html === esc(t)) {
     const text = t;
     if (/\/WARN\]/.test(text)) {
-      html = esc(text).replace(/\[.*?\/WARN\]/, '<span style="color:#ff9900;font-weight:bold">$&</span>');
+      html = esc(text).replace(/\[([^\]]*\/WARN\])/, '<span style="color:#ff9900;font-weight:bold">[$1</span>');
       html = html.replace(/^(\[.*?\])/, '<span style="color:#64748b">$1</span>');
     } else if (/\/ERROR\]/.test(text) || /Exception/.test(text)) {
-      html = esc(text).replace(/\[.*?\/ERROR\]/, '<span style="color:#ff2a5f;font-weight:bold">$&</span>');
+      html = esc(text).replace(/\[([^\]]*\/ERROR\])/, '<span style="color:#ff2a5f;font-weight:bold">[$1</span>');
       html = html.replace(/^(\[.*?\])/, '<span style="color:#64748b">$1</span>');
     } else if (/Done \(/.test(text)) {
       html = '<span style="color:#00ff88;font-weight:bold">' + esc(text) + '</span>';
     } else if (/\/INFO\]/.test(text)) {
       // Color timestamp gray, [Thread/INFO] cyan, rest white
-      html = esc(text).replace(/^(\[.*?\])\s*(\[.*?\/INFO\])/,
+      html = esc(text).replace(/^(\[.*?\])\s*(\[[^\]]*\/INFO\])/,
         '<span style="color:#64748b">$1</span> <span style="color:#00f0ff">$2</span>');
     } else if (/^\[.*?\]/.test(text)) {
       html = esc(text).replace(/^(\[.*?\])/, '<span style="color:#64748b">$1</span>');
