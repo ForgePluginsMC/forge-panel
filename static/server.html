@@ -320,10 +320,97 @@ async function refreshRack() {
 // remote ones (there's no log file to tail on a remote host).
 const logDiv = document.getElementById("console-log");
 let es = null;
+// Minecraft color codes (§) and ANSI codes to HTML
+const mcColors = {
+  '0': '#000000', '1': '#0000AA', '2': '#00AA00', '3': '#00AAAA',
+  '4': '#AA0000', '5': '#AA00AA', '6': '#FFAA00', '7': '#AAAAAA',
+  '8': '#555555', '9': '#5555FF', 'a': '#55FF55', 'b': '#55FFFF',
+  'c': '#FF5555', 'd': '#FF55FF', 'e': '#FFFF55', 'f': '#FFFFFF'
+};
+const ansiColors = {
+  '30': '#000000', '31': '#AA0000', '32': '#00AA00', '33': '#FFAA00',
+  '34': '#0000AA', '35': '#AA00AA', '36': '#00AAAA', '37': '#AAAAAA',
+  '90': '#555555', '91': '#FF5555', '92': '#55FF55', '93': '#FFFF55',
+  '94': '#5555FF', '95': '#FF55FF', '96': '#55FFFF', '97': '#FFFFFF'
+};
+function mcToHtml(text) {
+  // Escape HTML first
+  let esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Convert ANSI codes (\x1b[...m) to § codes for unified handling
+  esc = esc.replace(/\x1b\[([0-9;]+)m/g, (match, codes) => {
+    const parts = codes.split(';');
+    let result = '';
+    for (const p of parts) {
+      if (p === '0' || p === '') result += '§r';
+      else if (p === '1') result += '§l';
+      else if (p === '3') result += '§o';
+      else if (p === '4') result += '§n';
+      else if (p === '9') result += '§m';
+      else if (ansiColors[p]) {
+        // Find the § code for this ANSI color
+        const hex = ansiColors[p];
+        for (const [code, c] of Object.entries(mcColors)) {
+          if (c.toLowerCase() === hex.toLowerCase()) { result += '§' + code; break; }
+        }
+      }
+    }
+    return result;
+  });
+  // Remove any remaining ANSI codes
+  esc = esc.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+  // Convert § codes to spans
+  let html = '';
+  let i = 0;
+  let openSpan = false;
+  let styles = [];
+  while (i < esc.length) {
+    if (esc[i] === '§' && i + 1 < esc.length) {
+      const code = esc[i + 1].toLowerCase();
+      if (mcColors[code]) {
+        if (openSpan) { html += '</span>'; openSpan = false; }
+        styles = [`color:${mcColors[code]}`];
+        html += `<span style="${styles.join(';')}">`;
+        openSpan = true;
+      } else if (code === 'l') {
+        styles.push('font-weight:bold');
+        if (openSpan) { html += '</span>'; }
+        html += `<span style="${styles.join(';')}">`;
+        openSpan = true;
+      } else if (code === 'o') {
+        styles.push('font-style:italic');
+        if (openSpan) { html += '</span>'; }
+        html += `<span style="${styles.join(';')}">`;
+        openSpan = true;
+      } else if (code === 'n') {
+        styles.push('text-decoration:underline');
+        if (openSpan) { html += '</span>'; }
+        html += `<span style="${styles.join(';')}">`;
+        openSpan = true;
+      } else if (code === 'm') {
+        styles.push('text-decoration:line-through');
+        if (openSpan) { html += '</span>'; }
+        html += `<span style="${styles.join(';')}">`;
+        openSpan = true;
+      } else if (code === 'r') {
+        if (openSpan) { html += '</span>'; openSpan = false; }
+        styles = [];
+      }
+      // §k (obfuscated) - skip, just ignore the code
+      i += 2;
+    } else {
+      html += esc[i];
+      i++;
+    }
+  }
+  if (openSpan) html += '</span>';
+  return html;
+}
 function appendLine(t) {
-  logDiv.textContent += t + "\n";
-  while (logDiv.textContent.split("\n").length > 3000) {
-    logDiv.textContent = logDiv.textContent.slice(logDiv.textContent.indexOf("\n") + 1);
+  const div = document.createElement('div');
+  div.innerHTML = mcToHtml(t);
+  logDiv.appendChild(div);
+  while (logDiv.children.length > 3000) {
+    logDiv.removeChild(logDiv.firstChild);
   }
 }
 function termLine(t) { appendLine(t); logDiv.scrollTop = logDiv.scrollHeight; }
