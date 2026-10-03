@@ -435,16 +435,19 @@ function prettyItem(id) {
 }
 
 function invGrid(items, slots, cols) {
-  const bySlot = {};
-  items.forEach(it => bySlot[it.slot] = it);
+  const bySlot = new Map();
+  (items || []).forEach(it => { if (it && it.slot !== undefined) bySlot.set(Number(it.slot), it); });
   return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, 1fr)">` +
     slots.map(s => {
-      const it = bySlot[s];
+      const it = bySlot.get(s);
       const ghost = !it && SLOT_ICONS[s]
         ? `<span class="slot-ghost">${SLOT_ICONS[s]}</span>` : "";
-      return `<div class="inv-slot" title="${it ? esc(it.id) : ""}">` +
-        (it ? `<span class="inv-item">${esc(prettyItem(it.id))}</span><span class="inv-count">${it.count}</span>` : ghost) +
-        `</div>`;
+      let inner = ghost;
+      if (it) {
+        const icon = `https://minecraft-api.vercel.app/api/item/${encodeURIComponent(it.id)}/icon.png`;
+        inner = `<img class="inv-icon" src="${icon}" alt="${esc(prettyItem(it.id))}" loading="lazy" onerror="this.style.display='none'"><span class="inv-count">${it.count > 1 ? it.count : ""}</span>`;
+      }
+      return `<div class="inv-slot${it ? " filled" : ""}" title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
     }).join("") + `</div>`;
 }
 
@@ -517,7 +520,7 @@ function playerModalHTML(info) {
     </div>
   </div>
   <p class="small muted" id="paction-out"></p>
-  <h4>Inventory</h4>
+  <h4>Inventory <span class="muted small" id="inv-debug">[debug: ${info.inventory ? info.inventory.length + " items" : "inventory=" + typeof info.inventory}]</span></h4>
   ${invGrid(info.inventory, armorRow, 5)}
   <div style="height:8px"></div>
   ${invGrid(info.inventory, range(9, 35), 9)}
