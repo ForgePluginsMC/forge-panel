@@ -577,3 +577,52 @@ a.backend-chip:hover { border-color: var(--cyan); color: #fff; filter: drop-shad
 .inv-toggle { display: flex; gap: 6px; margin: 12px 0 10px; }
 .inv-toggle .inv-tab { opacity: 0.6; }
 .inv-toggle .inv-tab.active { opacity: 1; border-color: var(--ember-hi); color: var(--ember-hi); box-shadow: 0 0 8px rgba(255, 123, 47, 0.4); }
+
+/* Plugin browser — Modrinth layout, Forge ember style */
+.plugin-browser-body { display: flex; gap: 16px; margin-top: 12px; }
+.plugin-sidebar {
+  width: 210px; flex-shrink: 0;
+  background: rgba(8, 11, 20, 0.85); border: 1px solid var(--line);
+  padding: 12px; align-self: flex-start;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+}
+.plugin-sidebar h4 {
+  font-family: var(--font-d); font-size: 13px; letter-spacing: 2px;
+  color: var(--ember-hi); margin: 0 0 10px; text-transform: uppercase;
+}
+.cat-list { display: flex; flex-direction: column; gap: 2px; max-height: 480px; overflow-y: auto; }
+.cat-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; border-left: 2px solid transparent;
+  color: var(--dim); font-family: var(--font-b); font-size: 13px;
+  padding: 7px 10px; cursor: pointer; transition: all 0.15s;
+}
+.cat-item:hover { color: var(--text); background: rgba(255, 123, 47, 0.08); border-left-color: var(--ember); }
+.cat-item.active {
+  color: var(--ember-hi); background: rgba(255, 123, 47, 0.12);
+  border-left-color: var(--ember-hi); font-weight: 600;
+}
+.plugin-main { flex: 1; min-width: 0; }
+.plugin-list { display: flex; flex-direction: column; gap: 10px; }
+/* Plugin cards in list style */
+.plugin-list .plugin-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: rgba(8, 11, 20, 0.85); border: 1px solid var(--line);
+  padding: 14px; cursor: pointer; transition: border-color 0.15s;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+}
+.plugin-list .plugin-card:hover { border-color: var(--ember); box-shadow: 0 0 12px rgba(255, 123, 47, 0.2); }
+@media (max-width: 900px) {
+  .plugin-browser-body { flex-direction: column; }
+  .plugin-sidebar { width: 100%; }
+  .cat-list { max-height: 200px; }
+}
+.plugin-list .plugin-card img {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border: 1px solid var(--line); object-fit: cover;
+}
+.plugin-list .plugin-card strong {
+  font-family: var(--font-d); font-size: 15px; color: var(--text);
+  display: block; margin-bottom: 4px;
+}
+.plugin-list .plugin-card .small { font-size: 12px; }

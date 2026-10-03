@@ -105,8 +105,15 @@
         <button class="btn" id="plugin-search">Search</button>
         <button class="btn" id="plugin-trending">Trending</button>
       </div>
-      <div class="cat-row" id="plugin-cats"></div>
-      <div class="plugin-grid" id="plugin-results"></div>
+      <div class="plugin-browser-body">
+        <aside class="plugin-sidebar">
+          <h4>Category</h4>
+          <div class="cat-list" id="plugin-cats"></div>
+        </aside>
+        <div class="plugin-main">
+          <div class="plugin-list" id="plugin-results"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -212,19 +219,23 @@ async function loadPluginCats() {
     if (psrc === "spiget") {
       const r = await api("GET", `/api/servers/${enc}/plugins/spiget/categories`);
       row.innerHTML = r.categories.map(c =>
-        `<button class="pill" data-catid="${c.id}">${esc(c.name)}</button>`).join("");
-      row.querySelectorAll(".pill").forEach(b => b.onclick = () => {
-        row.querySelectorAll(".pill").forEach(x => x.classList.remove("active"));
+        `<button class="cat-item" data-catid="${c.id}">${esc(c.name)}</button>`).join("");
+      row.querySelectorAll(".cat-item").forEach(b => b.onclick = () => {
+        row.querySelectorAll(".cat-item").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
         browsePluginCategory("spiget", b.dataset.catid);
       });
     } else {
       // Modrinth: plugin, mod, or modpack — pass project_type.
       const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/categories?project_type=${psrc}`);
-      row.innerHTML = r.categories.map(c =>
-        `<button class="pill" data-cat="${esc(c.name)}">${esc(c.name)}</button>`).join("");
-      row.querySelectorAll(".pill").forEach(b => b.onclick = () => {
-        row.querySelectorAll(".pill").forEach(x => x.classList.remove("active"));
+      // Sort alphabetically, prettify names.
+      const cats = r.categories
+        .map(c => c.name)
+        .sort((a, b) => a.localeCompare(b));
+      row.innerHTML = cats.map(name =>
+        `<button class="cat-item" data-cat="${esc(name)}">${esc(prettyCat(name))}</button>`).join("");
+      row.querySelectorAll(".cat-item").forEach(b => b.onclick = () => {
+        row.querySelectorAll(".cat-item").forEach(x => x.classList.remove("active"));
         b.classList.add("active");
         browsePluginCategory(psrc, b.dataset.cat);
       });
@@ -437,6 +448,15 @@ document.getElementById("player-modal").onclick = (e) => {
 function prettyItem(id) {
   return id.replace(/^minecraft:/, "").split("_")
     .map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(" ");
+}
+
+// "game-mechanics" → "Game Mechanics", "mmo" → "MMO"
+function prettyCat(slug) {
+  const upper = new Set(["mmo", "rpg", "pvp", "pve", "gui", "api"]);
+  return slug.split("-").map(w => {
+    if (upper.has(w.toLowerCase())) return w.toUpperCase();
+    return w ? w[0].toUpperCase() + w.slice(1) : w;
+  }).join(" ");
 }
 
 function invGrid(items, slots, cols, isEnder) {
