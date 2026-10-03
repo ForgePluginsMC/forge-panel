@@ -200,55 +200,14 @@ pub fn write_config(path: &Path, cfg: &Config) -> Result<()> {
     Ok(())
 }
 
-/// Append a new [[servers]] entry to the config file without touching the rest.
+/// Append a new server to the config file by reading, updating, and rewriting.
+/// This avoids TOML duplicate-key errors from string concatenation.
 pub fn append_server(path: &Path, server: &ServerConfig) -> Result<()> {
-    let mut block = String::from("\n[[servers]]\n");
-    block.push_str(&format!("name = {:?}\n", server.name));
-    block.push_str(&format!("dir = {:?}\n", server.dir.to_string_lossy()));
-    block.push_str(&format!("jar = {:?}\n", server.jar));
-    if let Some(java) = &server.java {
-        block.push_str(&format!("java = {:?}\n", java));
-    }
-    if !server.jvm_args.is_empty() {
-        let args: Vec<String> = server.jvm_args.iter().map(|a| format!("{:?}", a)).collect();
-        block.push_str(&format!("jvm_args = [{}]\n", args.join(", ")));
-    }
-    if !server.server_args.is_empty() {
-        let args: Vec<String> = server.server_args.iter().map(|a| format!("{:?}", a)).collect();
-        block.push_str(&format!("server_args = [{}]\n", args.join(", ")));
-    }
-    block.push_str(&format!("port = {}\n", server.port));
-    if let Some(rp) = server.rcon_port {
-        block.push_str(&format!("rcon_port = {}\n", rp));
-    }
-    if let Some(pw) = &server.rcon_password {
-        block.push_str(&format!("rcon_password = {:?}\n", pw));
-    }
-    if let Some(qp) = server.query_port {
-        block.push_str(&format!("query_port = {}\n", qp));
-    }
-    if let Some(xms) = server.xms_mb {
-        block.push_str(&format!("xms_mb = {}\n", xms));
-    }
-    if let Some(xmx) = server.xmx_mb {
-        block.push_str(&format!("xmx_mb = {}\n", xmx));
-    }
-    if server.role == ServerRole::Proxy {
-        block.push_str("role = \"proxy\"\n");
-    }
-    if let Some(bp) = &server.behind_proxy {
-        block.push_str(&format!("behind_proxy = {:?}\n", bp));
-    }
-    if let Some(rh) = &server.remote_host {
-        block.push_str(&format!("remote_host = {:?}\n", rh));
-    }
-    let existing = std::fs::read_to_string(path).unwrap_or_default();
-    let new_text = format!("{}{}", existing, block);
-    // Validate the merged file before writing.
-    let merged: Config = toml::from_str(&new_text).context("merged config invalid")?;
-    merged.validate()?;
-    std::fs::write(path, new_text).with_context(|| format!("writing {}", path.display()))?;
-    Ok(())
+    let mut cfg = Config::load(path).unwrap_or_default();
+    // Remove any existing entry with the same name to avoid duplicates.
+    cfg.servers.retain(|s| s.name != server.name);
+    cfg.servers.push(server.clone());
+    write_config(path, &cfg)
 }
 
 #[cfg(test)]
