@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>forge-panel — install</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <h1><span class="flame">🔥</span> <a href="/" style="color:var(--text)">forge-panel</a> <span class="muted">/ install</span></h1>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/install">Install</a>
+    <button onclick="logout()">Logout</button>
+  </nav>
+</header>
+<main>
+  <div class="card screws">
+    <h2>New server</h2>
+    <label>Server type</label>
+    <select id="itype"></select>
+    <div id="version-row">
+      <label>Version</label>
+      <select id="iversion"></select>
+      <div style="margin-top:10px; display:flex; gap:12px; align-items:center">
+        <label class="toggle">
+          <input type="checkbox" id="isnap">
+          <span class="tslot"></span>
+          <span class="tknob"></span>
+          <span class="tlabel on">ON</span>
+          <span class="tlabel off">OFF</span>
+        </label>
+        <span class="small muted">Include snapshots &amp; pre-releases</span>
+      </div>
+      <input id="iversion-text" style="display:none" placeholder="e.g. 1.21">
+    </div>
+    <label>Name (letters, numbers, - and _)</label>
+    <input id="iname" placeholder="my-server">
+    <div id="eula-row" style="margin-top:12px; display:flex; gap:12px; align-items:center">
+      <label class="toggle">
+        <input type="checkbox" id="ieula">
+        <span class="tslot"></span>
+        <span class="tknob"></span>
+        <span class="tlabel on">ON</span>
+        <span class="tlabel off">OFF</span>
+      </label>
+      <span>I accept the <a href="https://www.minecraft.net/en-us/eula" target="_blank">Minecraft EULA</a></span>
+    </div>
+    <div style="margin-top:14px"><button class="arcade amber" id="install-btn" style="padding:12px 26px">INSTALL</button></div>
+  </div>
+
+  <div class="card screws" id="job-card" style="display:none">
+    <h3><span class="lamp on-amber"></span>Install progress</h3>
+    <div class="logbox" id="job-log"></div>
+  </div>
+
+  <div class="card screws">
+    <h2>Recent installs</h2>
+    <table><thead><tr><th>Name</th><th>Type</th><th>Version</th><th>Status</th><th></th></tr></thead>
+    <tbody id="jobs-body"></tbody></table>
+  </div>
+
+  <div class="card screws">
+    <h2>Import existing</h2>
+    <p class="small muted">Point the panel at a directory that already has a server jar. Files stay where they are.</p>
+    <div class="form-row">
+      <div><label>Name</label><input id="imp-name" placeholder="my-server"></div>
+      <div><label>Directory (absolute path on this machine)</label><input id="imp-dir" placeholder="/opt/minecraft/my-server"></div>
+    </div>
+    <div style="margin-top:12px"><button class="arcade amber" id="import-btn" style="padding:10px 22px">IMPORT</button>
+    <span class="small muted" id="import-msg"></span></div>
+  </div>
+
+  <div class="card screws">
+    <h2>Add remote server</h2>
+    <p class="small muted">Manage a server running on another machine over RCON. The panel won't start, stop, or read files for it — just status, players, TPS, and an RCON console.</p>
+    <div class="form-row">
+      <div><label>Name</label><input id="rem-name" placeholder="my-remote"></div>
+      <div><label>Host</label><input id="rem-host" placeholder="192.168.1.50"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Game port</label><input id="rem-port" placeholder="25570"></div>
+      <div><label>RCON port</label><input id="rem-rcon" placeholder="25575"></div>
+    </div>
+    <div class="form-row">
+      <div><label>RCON password</label><input id="rem-pw" type="password"></div>
+      <div><label>Query port (optional)</label><input id="rem-query" placeholder=""></div>
+    </div>
+    <div style="margin-top:12px"><button class="arcade amber" id="remote-btn" style="padding:10px 22px">ADD REMOTE</button>
+    <span class="small muted" id="remote-msg"></span></div>
+  </div>
+
+  <p class="error" id="err"></p>
+</main>
+<script src="/static/app.js"></script>
+<script>
+let types = [];
+
+async function loadTypes() {
+  const r = await api("GET", "/api/installer/types");
+  types = r.types;
+  const sel = document.getElementById("itype");
+  sel.innerHTML = types.map(t => `<option value="${t.id}">${t.id}${t.needs_version_input ? " (BuildTools)" : ""}</option>`).join("");
+  sel.onchange = onTypeChange;
+  onTypeChange();
+  document.getElementById("isnap").onchange = onTypeChange;
+}
+
+async function onTypeChange() {
+  const t = types.find(x => x.id === document.getElementById("itype").value);
+  const sel = document.getElementById("iversion");
+  const txt = document.getElementById("iversion-text");
+  document.getElementById("eula-row").style.display = t.id === "velocity" ? "none" : "block";
+  if (t.needs_version_input) {
+    sel.style.display = "none"; txt.style.display = "block";
+    txt.placeholder = t.version_hint || "version";
+  } else {
+    sel.style.display = "block"; txt.style.display = "none";
+    sel.innerHTML = `<option>loading versions…</option>`;
+    try {
+      const snaps = document.getElementById("isnap").checked ? "&snapshots=true" : "";
+      const r = await api("GET", `/api/installer/versions?type=${t.id}${snaps}`);
+      sel.innerHTML = r.versions.map(v => `<option value="${esc(v.id)}">${esc(v.id)}${v.label ? " — " + esc(v.label) : ""}${v.snapshot ? " ⚠" : ""}</option>`).join("")
+        || `<option value="">(no versions)</option>`;
+    } catch (e) { sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`; }
+  }
+}
+
+document.getElementById("install-btn").onclick = async () => {
+  const err = document.getElementById("err");
+  err.textContent = "";
+  const type = document.getElementById("itype").value;
+  const t = types.find(x => x.id === type);
+  const version = t.needs_version_input
+    ? document.getElementById("iversion-text").value.trim()
+    : document.getElementById("iversion").value;
+  const name = document.getElementById("iname").value.trim();
+  const eula = type === "velocity" ? true : document.getElementById("ieula").checked;
+  if (!version) { err.textContent = "pick a version"; return; }
+  if (!name) { err.textContent = "give the server a name"; return; }
+  try {
+    const r = await api("POST", "/api/installer/install", { type, version, name, eula });
+    watchJob(r.job_id);
+    loadJobs();
+  } catch (e) { err.textContent = e.message; }
+};
+
+function watchJob(id) {
+  const card = document.getElementById("job-card");
+  const log = document.getElementById("job-log");
+  card.style.display = "block";
+  log.textContent = "";
+  const es = new EventSource(`/api/installer/jobs/${id}/stream`);
+  es.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      log.textContent += d.line + "\n";
+    } catch { log.textContent += e.data + "\n"; }
+    log.scrollTop = log.scrollHeight;
+  };
+  es.addEventListener("done", () => { es.close(); loadJobs(); });
+}
+
+async function loadJobs() {
+  const body = document.getElementById("jobs-body");
+  try {
+    const r = await api("GET", "/api/installer/jobs");
+    body.innerHTML = r.jobs.map(j => {
+      let st, watch = "";
+      if (j.status === "running") { st = lamp("yellow") + `<span class="muted">running…</span>`; watch = `<button class="btn" data-watch="${j.id}">Watch</button>`; }
+      else if (j.status === "done") st = lamp("green") + `<span class="ok">done</span>`;
+      else if (j.status && j.status.failed) st = lamp("red") + `<span class="error" title="${esc(j.status.failed)}">failed</span>`;
+      else st = `<span class="muted">${esc(JSON.stringify(j.status))}</span>`;
+      return `<tr><td>${esc(j.name)}</td><td>${esc(j.kind)}</td><td>${esc(j.version)}</td><td>${st}</td><td>${watch}</td></tr>`;
+    }).join("") || `<tr><td colspan="5" class="muted">no installs yet</td></tr>`;
+    body.querySelectorAll("[data-watch]").forEach(b => b.onclick = () => watchJob(b.dataset.watch));
+  } catch (e) { body.innerHTML = `<tr><td colspan="5" class="error">${esc(e.message)}</td></tr>`; }
+}
+
+document.getElementById("import-btn").onclick = async () => {
+  const msg = document.getElementById("import-msg");
+  msg.textContent = "importing…";
+  try {
+    await api("POST", "/api/installer/import", {
+      name: document.getElementById("imp-name").value.trim(),
+      dir: document.getElementById("imp-dir").value.trim(),
+    });
+    msg.textContent = "imported — see the dashboard";
+  } catch (e) { msg.textContent = "error: " + e.message; }
+};
+
+document.getElementById("remote-btn").onclick = async () => {
+  const msg = document.getElementById("remote-msg");
+  msg.textContent = "adding…";
+  const num = (id) => {
+    const v = document.getElementById(id).value.trim();
+    return v ? parseInt(v, 10) : null;
+  };
+  const port = num("rem-port"), rconPort = num("rem-rcon");
+  if (!port || !rconPort) { msg.textContent = "game port and RCON port are required"; return; }
+  try {
+    await api("POST", "/api/servers/remote", {
+      name: document.getElementById("rem-name").value.trim(),
+      host: document.getElementById("rem-host").value.trim(),
+      port: port,
+      rcon_port: rconPort,
+      rcon_password: document.getElementById("rem-pw").value,
+      query_port: num("rem-query"),
+    });
+    msg.textContent = "added — see the dashboard";
+  } catch (e) { msg.textContent = "error: " + e.message; }
+};
+
+loadTypes();
+loadJobs();
+setInterval(loadJobs, 10000);
+</script>
+</body>
+</html>

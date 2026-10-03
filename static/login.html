@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>forge-panel — login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-page">
+<main style="padding:0">
+<div class="login-wrap">
+  <h2><span class="flame">🔥</span> FORGE-PANEL</h2>
+  <div class="tagline">Mission Control</div>
+  <div id="setup-block" style="display:none">
+    <p class="muted">First run — set your admin password.</p>
+    <label>Password (min 8 chars)</label>
+    <input type="password" id="pw1" autocomplete="new-password">
+    <label>Confirm</label>
+    <input type="password" id="pw2" autocomplete="new-password">
+    <div style="margin-top:12px"><button class="arcade amber" id="setup-btn" style="padding:10px 22px">CREATE ADMIN</button></div>
+  </div>
+  <div id="login-block" style="display:none">
+    <label>Password</label>
+    <input type="password" id="pw" autocomplete="current-password">
+    <div style="margin-top:12px"><button class="arcade amber" id="login-btn" style="padding:10px 22px">LOG IN</button></div>
+  </div>
+  <p class="error" id="err"></p>
+</div>
+</main>
+<script src="/static/app.js"></script>
+<script>
+(async () => {
+  const err = document.getElementById("err");
+  let needed = true;
+  try {
+    const r = await fetch("/api/setup-needed");
+    needed = (await r.json()).needed;
+  } catch (e) { err.textContent = "can't reach panel: " + e.message; return; }
+  document.getElementById(needed ? "setup-block" : "login-block").style.display = "block";
+
+  async function doSetup() {
+    const a = document.getElementById("pw1").value, b = document.getElementById("pw2").value;
+    if (a.length < 8) { err.textContent = "password must be at least 8 characters"; return; }
+    if (a !== b) { err.textContent = "passwords don't match"; return; }
+    try { await api("POST", "/api/setup", { password: a }); window.location.href = "/login"; }
+    catch (e) { err.textContent = e.message; }
+  }
+  async function doLogin() {
+    const pw = document.getElementById("pw").value;
+    try { await api("POST", "/api/login", { password: pw }); window.location.href = "/"; }
+    catch (e) { err.textContent = e.message; }
+  }
+  document.getElementById("setup-btn").onclick = doSetup;
+  document.getElementById("login-btn").onclick = doLogin;
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter") { needed ? doSetup() : doLogin(); }
+  });
+})();
+</script>
+</body>
+</html>

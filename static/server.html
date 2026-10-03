@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>forge-panel — server</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <h1><span class="flame">🔥</span> <a href="/" style="color:var(--text)">forge-panel</a> <span class="muted">/ <span id="srv-name"></span></span></h1>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/install">Install</a>
+    <button onclick="logout()">Logout</button>
+  </nav>
+</header>
+<main>
+  <div class="card screws">
+    <h2 style="margin:0"><span id="srv-lamp"></span><span id="srv-title"></span> <span id="srv-badges"></span></h2>
+    <div class="small muted" id="srv-meta" style="margin:4px 0 8px"></div>
+    <div class="rack-row" id="rack" style="display:none">
+      <div id="rack-ram"></div>
+      <div id="rack-tps"></div>
+      <div>
+        <div class="rack-label">Players</div>
+        <div id="rack-players"><span class="seg">—</span></div>
+      </div>
+      <div>
+        <div class="rack-label">RAM LED</div>
+        <div id="rack-led"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center" id="srv-actions"></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-tab="console" class="active">Console</button>
+    <button data-tab="players">Players</button>
+    <button data-tab="files">Files</button>
+    <button data-tab="backups">Backups</button>
+    <button data-tab="plugins">Plugins</button>
+    <button data-tab="settings">Settings</button>
+  </div>
+
+  <div id="tab-console">
+    <div class="bezel">
+      <div id="console-log"></div>
+      <div class="cmdbar">
+        <input id="cmd-input" placeholder="console command…" autocomplete="off">
+        <button class="arcade amber" id="cmd-send" style="padding:10px 20px">SEND</button>
+      </div>
+      <p class="small muted" id="cmd-out"></p>
+    </div>
+  </div>
+
+  <div id="tab-players" style="display:none">
+    <div class="card screws"><h3>Players</h3><div id="players-list" class="muted">loading…</div></div>
+  </div>
+
+  <div id="tab-files" style="display:none">
+    <div class="card screws">
+      <h3>Files <span class="muted small" id="files-path"></span></h3>
+      <table><thead><tr><th>Name</th><th>Size</th><th></th></tr></thead><tbody id="files-body"></tbody></table>
+    </div>
+  </div>
+
+  <div id="tab-backups" style="display:none">
+    <div class="card screws">
+      <h3>Backups</h3>
+      <button class="arcade amber" id="backup-btn" style="padding:10px 20px">BACKUP</button>
+      <span class="small muted" id="backup-msg"></span>
+      <table style="margin-top:12px"><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody id="backups-body"></tbody></table>
+    </div>
+  </div>
+
+  <div id="tab-plugins" style="display:none">
+    <div class="card screws">
+      <h3>Installed plugins</h3>
+      <table><thead><tr><th>File</th><th>Size</th><th></th></tr></thead><tbody id="installed-body"></tbody></table>
+    </div>
+    <div class="card screws">
+      <h3>Plugin browser</h3>
+      <div class="tabs" style="margin-bottom:8px">
+        <button data-psrc="modrinth" class="active">Modrinth</button>
+        <button data-psrc="spiget">Spiget</button>
+      </div>
+      <div class="form-row">
+        <input id="plugin-q" placeholder="search plugins…">
+        <button class="btn" id="plugin-search">Search</button>
+        <button class="btn" id="plugin-trending">Trending</button>
+      </div>
+      <div class="cat-row" id="plugin-cats"></div>
+      <div class="plugin-grid" id="plugin-results"></div>
+    </div>
+  </div>
+
+<div class="modal" id="plugin-modal" style="display:none">
+  <div class="box">
+    <div style="display:flex; justify-content:flex-end">
+      <button class="btn" id="plugin-modal-close">✕</button>
+    </div>
+    <div id="plugin-modal-body"></div>
+  </div>
+</div>
+
+  <div id="tab-settings" style="display:none">
+    <div class="card screws">
+      <h3>Settings</h3>
+      <div class="rack-label">Heap allocation (faders, MB)</div>
+      <div style="display:flex; gap:8px; align-items:flex-start">
+        <div class="fader-box">
+          <div class="f-label">Xms</div>
+          <input type="range" class="fader" id="set-xms" min="256" max="16384" step="256" value="1024">
+          <div class="f-val" id="set-xms-val">1024</div>
+        </div>
+        <div class="fader-box">
+          <div class="f-label">Xmx</div>
+          <input type="range" class="fader" id="set-xmx" min="256" max="16384" step="256" value="2048">
+          <div class="f-val" id="set-xmx-val">2048</div>
+        </div>
+      </div>
+      <label>MC version (for plugin version filtering, e.g. 26.2)</label>
+      <input id="set-mc" placeholder="26.2">
+      <label>Behind proxy (name of a proxy server, empty = none)</label>
+      <input id="set-proxy" placeholder="">
+      <div style="margin-top:12px"><button class="arcade amber" id="settings-save" style="padding:10px 22px">SAVE</button>
+      <span class="small muted" id="settings-msg"></span></div>
+    </div>
+    <div class="card screws">
+      <h3>Geyser (Bedrock crossplay)</h3>
+      <p class="small muted">One-click: downloads Geyser + Floodgate jars into plugins/, enables Floodgate auth, restarts the server.</p>
+      <button class="arcade amber" id="geyser-btn" style="padding:10px 20px">GEYSER INSTALL</button>
+      <span class="small muted" id="geyser-msg"></span>
+    </div>
+  </div>
+
+  <p class="error" id="err"></p>
+</main>
+
+<div class="modal" id="file-modal" style="display:none">
+  <div class="box wide">
+    <header>
+      <h3 id="file-modal-title"></h3>
+      <div style="display:flex; gap:8px; align-items:center">
+        <div class="seg-toggle" id="file-mode-toggle" style="display:none">
+          <button data-fmode="smart" class="active">Settings</button><button data-fmode="raw">Raw</button>
+        </div>
+        <button class="btn" id="file-modal-close">✕</button>
+      </div>
+    </header>
+    <div id="file-smart" class="cfg-form" style="display:none"></div>
+    <textarea id="file-modal-text"></textarea>
+    <footer><button class="btn primary" id="file-modal-save">Save</button><span class="small muted" id="file-modal-msg"></span></footer>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+const NAME = serverNameFromPath();
+const enc = encodeURIComponent(NAME);
+document.getElementById("srv-name").textContent = NAME;
+document.getElementById("srv-title").textContent = NAME;
+let serverInfo = null;
+let curPath = "";
+let psrc = "modrinth";
+let ramGauge = null, tpsGauge = null, headerInit = false;
+
+// Tabs
+document.querySelectorAll("#tabs button").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("#tabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    ["console","players","files","backups","plugins","settings"].forEach(t => {
+      document.getElementById("tab-" + t).style.display = t === b.dataset.tab ? "block" : "none";
+    });
+    if (b.dataset.tab === "players") loadPlayers();
+    if (b.dataset.tab === "files") loadFiles("");
+    if (b.dataset.tab === "backups") loadBackups();
+    if (b.dataset.tab === "plugins") { loadInstalled(); loadPluginCats(); }
+  };
+});
+document.querySelectorAll("[data-psrc]").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("[data-psrc]").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    psrc = b.dataset.psrc;
+    document.getElementById("plugin-results").innerHTML = "";
+    loadPluginCats();
+  };
+});
+
+async function loadPluginCats() {
+  const row = document.getElementById("plugin-cats");
+  row.innerHTML = "";
+  try {
+    if (psrc === "modrinth") {
+      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/categories`);
+      row.innerHTML = r.categories.map(c =>
+        `<button class="pill" data-cat="${esc(c.name)}">${esc(c.name)}</button>`).join("");
+      row.querySelectorAll(".pill").forEach(b => b.onclick = () => {
+        row.querySelectorAll(".pill").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        browsePluginCategory("modrinth", b.dataset.cat);
+      });
+    } else {
+      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/categories`);
+      row.innerHTML = r.categories.map(c =>
+        `<button class="pill" data-catid="${c.id}">${esc(c.name)}</button>`).join("");
+      row.querySelectorAll(".pill").forEach(b => b.onclick = () => {
+        row.querySelectorAll(".pill").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        browsePluginCategory("spiget", b.dataset.catid);
+      });
+    }
+  } catch (e) { /* categories are a bonus; search still works */ }
+}
+
+async function browsePluginCategory(source, cat) {
+  const grid = document.getElementById("plugin-results");
+  grid.innerHTML = `<p class="muted">loading…</p>`;
+  try {
+    if (source === "modrinth") {
+      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/search?sort=downloads&category=${encodeURIComponent(cat)}`);
+      grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("")
+        || `<p class="muted">no results</p>`;
+    } else {
+      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/category/${encodeURIComponent(cat)}`);
+      grid.innerHTML = r.hits.map(h => pluginCardHTML("spiget", h.id, h.name, h.tag, h.downloads, "")).join("")
+        || `<p class="muted">no results</p>`;
+    }
+    bindCards();
+  } catch (e) { grid.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+// Fader readouts
+for (const id of ["set-xms", "set-xmx"]) {
+  document.getElementById(id).addEventListener("input", e => {
+    document.getElementById(id + "-val").textContent = e.target.value;
+  });
+}
+
+function lampColorFor(s) {
+  return s.running ? "green" : "red";
+}
+
+async function refreshHeader() {
+  const servers = await api("GET", "/api/servers");
+  serverInfo = servers.find(s => s.name === NAME);
+  if (!serverInfo) { document.getElementById("err").textContent = "server not found"; return; }
+  const s = serverInfo;
+  document.getElementById("srv-lamp").innerHTML = lamp(lampColorFor(s), true);
+  let badges = "";
+  if (s.role === "proxy") badges += `<span class="badge proxy">proxy</span>`;
+  if (s.remote) badges += `<span class="badge remote">remote</span>`;
+  if (s.geyser && s.geyser.installed) badges += `<span class="badge geyser">geyser${s.geyser.bedrock_port ? " :" + s.geyser.bedrock_port : ""}</span>`;
+  document.getElementById("srv-badges").innerHTML = badges;
+  document.getElementById("srv-meta").textContent =
+    `:${s.port}` + (s.mc_version ? ` · MC ${s.mc_version}` : "") +
+    (s.behind_proxy ? ` · → ${s.behind_proxy}` : "") +
+    (s.remote ? ` · remote @ ${s.host || "?"}` : "");
+  document.getElementById("srv-actions").innerHTML = s.remote
+    ? `<span class="muted small">remote server — start/stop on its host</span>`
+    : (s.running
+      ? `<button class="arcade amber" id="a-restart">RESTART</button><button class="arcade red" id="a-stop">STOP</button>`
+      : `<button class="arcade green" id="a-start">START</button>`);
+  // Remote servers have no local files/backups/plugins/settings here.
+  for (const t of ["files", "backups", "plugins", "settings"]) {
+    const btn = document.querySelector(`#tabs button[data-tab="${t}"]`);
+    if (btn) btn.style.display = s.remote ? "none" : "";
+  }
+  document.getElementById("cmd-input").placeholder = s.remote ? "rcon command…" : "console command…";
+  const go = async (a) => { try { await api("POST", `/api/servers/${enc}/${a}`); refreshHeader(); refreshRack(); } catch (e) { document.getElementById("err").textContent = e.message; } };
+  const rs = document.getElementById("a-restart"); if (rs) rs.onclick = () => go("restart");
+  const st = document.getElementById("a-stop"); if (st) st.onclick = () => go("stop");
+  const sa = document.getElementById("a-start"); if (sa) sa.onclick = () => go("start");
+  // settings form
+  if (s.xms_mb) { document.getElementById("set-xms").value = s.xms_mb; document.getElementById("set-xms-val").textContent = s.xms_mb; }
+  if (s.xmx_mb) { document.getElementById("set-xmx").value = s.xmx_mb; document.getElementById("set-xmx-val").textContent = s.xmx_mb; }
+  document.getElementById("set-mc").value = s.mc_version || "";
+  document.getElementById("set-proxy").value = s.behind_proxy || "";
+  refreshRack();
+  // First load only: local servers get the live log stream; remote ones get
+  // an RCON command terminal instead (no log file to tail over there).
+  if (!headerInit) {
+    headerInit = true;
+    if (s.remote) termLine("(remote server — no log stream here; RCON commands below)");
+    else startConsoleStream();
+  }
+}
+
+// Instrument rack: RAM gauge, TPS gauge (via RCON), player 7-seg, LED bar.
+async function refreshRack() {
+  const s = serverInfo;
+  const rack = document.getElementById("rack");
+  if (!s || !s.running) { rack.style.display = "none"; return; }
+  rack.style.display = "flex";
+  const maxRam = s.xmx_mb || 4096;
+  if (!ramGauge) ramGauge = makeGauge(document.getElementById("rack-ram"),
+    { label: "RAM use", unit: "MB", min: 0, max: maxRam, redline: maxRam * 0.9 });
+  ramGauge.set(s.memory_mb);
+  ledBar(document.getElementById("rack-led"), (s.memory_mb || 0) / maxRam, 12);
+  document.getElementById("rack-players").innerHTML =
+    s.players_online != null ? `<span class="seg">${s.players_online}</span> <span class="muted small">/ ${s.players_max != null ? s.players_max : "?"}</span>` : `<span class="seg">—</span>`;
+  // TPS via the cached /tps endpoint (no console spam); hidden when unavailable.
+  const tpsBox = document.getElementById("rack-tps");
+  if (s.role !== "proxy") {
+    try {
+      const r = await api("GET", `/api/servers/${enc}/tps`);
+      if (r.tps != null) {
+        if (!tpsGauge) tpsGauge = makeGauge(tpsBox, { label: "TPS (1m)", unit: "", min: 0, max: 20 });
+        tpsGauge.set(r.tps);
+        tpsBox.style.display = "";
+      } else { tpsBox.style.display = "none"; }
+    } catch (e) { tpsBox.style.display = "none"; }
+  } else { tpsBox.style.display = "none"; }
+}
+
+// Console: live SSE log stream for local servers; RCON command terminal for
+// remote ones (there's no log file to tail on a remote host).
+const logDiv = document.getElementById("console-log");
+let es = null;
+function appendLine(t) {
+  logDiv.textContent += t + "\n";
+  while (logDiv.textContent.split("\n").length > 3000) {
+    logDiv.textContent = logDiv.textContent.slice(logDiv.textContent.indexOf("\n") + 1);
+  }
+}
+function termLine(t) { appendLine(t); logDiv.scrollTop = logDiv.scrollHeight; }
+function startConsoleStream() {
+  if (es) return;
+  es = new EventSource(`/api/servers/${enc}/console`);
+  es.onmessage = (e) => {
+    const atBottom = logDiv.scrollHeight - logDiv.scrollTop - logDiv.clientHeight < 60;
+    appendLine(e.data);
+    if (atBottom) logDiv.scrollTop = logDiv.scrollHeight;
+  };
+  es.onerror = () => { /* EventSource auto-reconnects */ };
+}
+
+async function sendCmd() {
+  const input = document.getElementById("cmd-input");
+  const out = document.getElementById("cmd-out");
+  const cmd = input.value.trim();
+  if (!cmd) return;
+  if (serverInfo && serverInfo.remote) {
+    // RCON terminal: command + response go straight into the log.
+    termLine("> " + cmd);
+    input.value = "";
+    try {
+      const r = await api("POST", `/api/servers/${enc}/command`, { command: cmd });
+      termLine(r.output || "(no output)");
+    } catch (e) { termLine("error: " + e.message); }
+    return;
+  }
+  out.textContent = "…";
+  try {
+    const r = await api("POST", `/api/servers/${enc}/command`, { command: cmd });
+    out.textContent = r.via === "stdin" ? "(sent — output lands in the log)" : (r.output || "(no output)");
+    input.value = "";
+  } catch (e) { out.textContent = "error: " + e.message; }
+}
+document.getElementById("cmd-send").onclick = sendCmd;
+document.getElementById("cmd-input").addEventListener("keydown", e => { if (e.key === "Enter") sendCmd(); });
+
+// Players
+async function loadPlayers() {
+  const el = document.getElementById("players-list");
+  try {
+    const p = await api("GET", `/api/servers/${enc}/players`);
+    el.innerHTML = p.online != null
+      ? `<span class="seg-label">Online</span><br><span class="seg">${p.online}</span> <span class="muted">/ ${p.max}</span> <span class="small muted">(via ${esc(p.source)})</span>` +
+        (p.names.length ? `<div style="margin-top:8px">${p.names.map(n => `<span class="backend-chip">${esc(n)}</span>`).join("")}</div>` : "")
+      : "unavailable";
+  } catch (e) { el.textContent = "error: " + e.message; }
+}
+
+// Files
+async function loadFiles(path) {
+  curPath = path;
+  document.getElementById("files-path").textContent = "/" + path;
+  const body = document.getElementById("files-body");
+  try {
+    const r = await api("GET", `/api/servers/${enc}/files?path=${encodeURIComponent(path)}`);
+    let html = "";
+    if (path) {
+      const parent = path.split("/").slice(0, -1).join("/");
+      html += `<tr><td><a href="#" data-p="${esc(parent)}"><span class="folder-ico"></span>..</a></td><td></td><td></td></tr>`;
+    }
+    for (const e of r.entries) {
+      const p = path ? path + "/" + e.name : e.name;
+      const link = e.is_dir ? `<a href="#" data-p="${esc(p)}"><span class="folder-ico"></span>${esc(e.name)}</a>` : esc(e.name);
+      const view = e.is_dir ? "" : `<button class="btn" data-view="${esc(p)}">View/Edit</button>`;
+      html += `<tr><td>${link}</td><td class="muted small">${e.is_dir ? "—" : fmtBytes(e.size)}</td><td>${view}</td></tr>`;
+    }
+    body.innerHTML = html;
+    body.querySelectorAll("[data-p]").forEach(a => a.onclick = (ev) => { ev.preventDefault(); loadFiles(a.dataset.p); });
+    body.querySelectorAll("[data-view]").forEach(b => b.onclick = () => openFile(b.dataset.view));
+  } catch (e) { body.innerHTML = `<tr><td colspan="3" class="error">${esc(e.message)}</td></tr>`; }
+}
+let editingPath = "", editingParsed = null, editingMode = "raw", editingType = "raw";
+
+// ---- Smart config editor: understands .properties and simple YAML ----
+const CFG_ENUMS = {
+  "difficulty": ["peaceful", "easy", "normal", "hard"],
+  "gamemode": ["survival", "creative", "adventure", "spectator"],
+  "level-type": ["default", "flat", "large_biomes", "amplified"],
+};
+
+function detectCfgType(path) {
+  if (/\.properties$/i.test(path)) return "properties";
+  if (/\.ya?ml$/i.test(path)) return "yaml";
+  return "raw";
+}
+
+function inferKind(key, value) {
+  const leaf = key.toLowerCase().split(".").pop();
+  if (CFG_ENUMS[leaf] && CFG_ENUMS[leaf].some(o => o.toLowerCase() === String(value).toLowerCase()))
+    return { t: "enum", options: CFG_ENUMS[leaf] };
+  if (/^(true|false)$/i.test(value)) return { t: "bool" };
+  if (/^-?\d+$/.test(value)) return { t: "int" };
+  if (/^-?\d*\.\d+([eE][+-]?\d+)?$/.test(value)) return { t: "float" };
+  return { t: "string" };
+}
+
+// Split "value # comment" respecting quotes. Returns [value, comment|null].
+function splitInlineComment(s) {
+  let quote = null;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quote) { if (c === quote) quote = null; }
+    else if (c === '"' || c === "'") quote = c;
+    else if (c === "#" && i > 0 && /\s/.test(s[i - 1])) return [s.slice(0, i).trimEnd(), s.slice(i)];
+  }
+  return [s, null];
+}
+
+function unquote(s) {
+  s = s.trim();
+  if (s.length >= 2 && ((s[0] === '"' && s[s.length - 1] === '"') || (s[0] === "'" && s[s.length - 1] === "'")))
+    return { value: s.slice(1, -1).replace(/\\"/g, '"'), quoted: true };
+  return { value: s, quoted: false };
+}
+
+function parseProperties(text) {
+  const lines = text.split("\n");
+  const entries = [];
+  lines.forEach((raw, i) => {
+    const t = raw.trim();
+    if (!t || t.startsWith("#") || t.startsWith("!")) { entries.push({ type: "raw", line: i }); return; }
+    const eq = raw.indexOf("="), co = raw.indexOf(":");
+    let sep = -1, sepCh = "=";
+    if (eq >= 0 && (co < 0 || eq < co)) { sep = eq; sepCh = "="; }
+    else if (co >= 0) { sep = co; sepCh = ":"; }
+    if (sep < 0) { entries.push({ type: "raw", line: i }); return; }
+    const key = raw.slice(0, sep).trim();
+    const value = raw.slice(sep + 1).trim();
+    entries.push({ type: "kv", key, path: key, value, line: i, sep: sepCh, kind: inferKind(key, value) });
+  });
+  return { type: "properties", lines, entries };
+}
+
+function parseSimpleYaml(text) {
+  const lines = text.split("\n");
+  const entries = [];
+  const stack = [];
+  let listBuf = null;
+  const flushList = () => {
+    if (listBuf) {
+      entries.push({ type: "list", path: listBuf.path, items: listBuf.items, indent: listBuf.indent, startLine: listBuf.startLine });
+      listBuf = null;
+    }
+  };
+  const dotted = () => stack.map(s => s.key).join(".");
+  lines.forEach((raw, i) => {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.startsWith("#")) { flushList(); entries.push({ type: "raw", line: i }); return; }
+    const indent = raw.match(/^\s*/)[0].length;
+    if (/^-\s?/.test(trimmed)) {
+      if (!listBuf || listBuf.indent !== indent) { flushList(); listBuf = { indent, startLine: i, items: [], path: dotted() }; }
+      const [val] = splitInlineComment(trimmed.replace(/^-\s?/, ""));
+      const uq = unquote(val);
+      listBuf.items.push({ line: i, value: uq.value, quoted: uq.quoted });
+      return;
+    }
+    flushList();
+    while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
+    const m = trimmed.match(/^([^:]+):(.*)$/);
+    if (!m) { entries.push({ type: "raw", line: i }); return; }
+    const key = m[1].trim();
+    const [valPart, comment] = splitInlineComment(m[2]);
+    const path = dotted() ? dotted() + "." + key : key;
+    if (valPart.trim() === "") {
+      entries.push({ type: "section", key, path, line: i, indent });
+      stack.push({ key, indent });
+    } else {
+      const uq = unquote(valPart);
+      entries.push({ type: "kv", key, path, value: uq.value, quoted: uq.quoted, comment, line: i, indent, kind: inferKind(path, uq.value) });
+    }
+  });
+  flushList();
+  return { type: "yaml", lines, entries };
+}
+
+function fmtYamlScalar(value, kind, wasQuoted) {
+  if (kind.t === "bool") return /^(true|1|yes)$/i.test(value) ? "true" : "false";
+  if (kind.t === "int" || kind.t === "float") return String(value).trim() === "" ? "0" : String(value).trim();
+  const s = String(value);
+  const needsQ = wasQuoted || s === "" || /[:#\[\]{},&*!|>'"%@`]/.test(s) || /^\s|\s$/.test(s) || /^(true|false|null|~|-?\d+(\.\d+)?)$/i.test(s);
+  return needsQ ? '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"' : s;
+}
+
+function controlHTML(e) {
+  const dl = `data-line="${e.line}"`;
+  switch (e.kind.t) {
+    case "bool": {
+      const on = /^(true)$/i.test(e.value);
+      return `<label class="toggle"><input type="checkbox" ${dl}${on ? " checked" : ""}><span class="tslot"></span><span class="tknob"></span><span class="tlabel on">ON</span><span class="tlabel off">OFF</span></label>`;
+    }
+    case "int": return `<input type="number" step="1" class="num" ${dl} value="${esc(e.value)}">`;
+    case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}">`;
+    case "enum": {
+      const cur = String(e.value).toLowerCase();
+      return `<select ${dl}>` + e.kind.options.map(o =>
+        `<option value="${esc(o)}"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
+    }
+    default: return `<input type="text" ${dl} value="${esc(e.value)}">`;
+  }
+}
+
+function renderSmartForm() {
+  const el = document.getElementById("file-smart");
+  let html = "";
+  for (const e of editingParsed.entries) {
+    if (e.type === "section") html += `<div class="cfg-section">${esc(e.path)}</div>`;
+    else if (e.type === "kv") html += `<div class="cfg-row"><span class="cfg-key" title="${esc(e.path)}">${esc(e.path)}</span><span class="cfg-ctl">${controlHTML(e)}</span></div>`;
+    else if (e.type === "list") {
+      const txt = e.items.map(it => it.value).join("\n");
+      html += `<div class="cfg-row"><span class="cfg-key" title="${esc(e.path)}">${esc(e.path)} <span class="muted">[list]</span></span><span class="cfg-ctl"><textarea data-liststart="${e.startLine}" rows="${Math.min(6, Math.max(2, e.items.length))}">${esc(txt)}</textarea></span></div>`;
+    }
+  }
+  el.innerHTML = html || `<p class="muted">nothing parseable — use Raw.</p>`;
+}
+
+function readControl(e) {
+  const ctl = document.querySelector(`#file-smart [data-line="${e.line}"]`);
+  if (!ctl) return null;
+  if (e.kind.t === "bool") return ctl.checked ? "true" : "false";
+  return ctl.value;
+}
+
+function serializeSmart() {
+  const lines = editingParsed.lines.slice();
+  const listEdits = {}; // startLine -> new item lines
+  for (const e of editingParsed.entries) {
+    if (e.type === "kv") {
+      const nv = readControl(e);
+      if (nv === null) continue;
+      const changed = e.kind.t === "bool" ? nv !== String(/^(true)$/i.test(e.value)) : nv !== e.value;
+      if (!changed) continue;
+      if (editingParsed.type === "properties") {
+        lines[e.line] = e.key + e.sep + nv;
+      } else {
+        const fv = fmtYamlScalar(nv, e.kind, e.quoted);
+        lines[e.line] = " ".repeat(e.indent) + e.key + ": " + fv + (e.comment ? " " + e.comment : "");
+      }
+    } else if (e.type === "list") {
+      const ta = document.querySelector(`#file-smart [data-liststart="${e.startLine}"]`);
+      if (!ta) continue;
+      const items = ta.value.split("\n");
+      const orig = e.items.map(it => it.value);
+      if (items.join("\n") === orig.join("\n")) continue;
+      const pad = " ".repeat(e.indent);
+      listEdits[e.startLine] = { count: e.items.length, lines: items.map(v => pad + "- " + fmtYamlScalar(v.trim(), { t: "string" }, e.items[0] ? e.items[0].quoted : false)) };
+    }
+  }
+  // Apply list splices from bottom up so line numbers stay valid.
+  Object.keys(listEdits).map(Number).sort((a, b) => b - a).forEach(start => {
+    const { count, lines: nl } = listEdits[start];
+    lines.splice(start, count, ...nl);
+  });
+  return lines.join("\n");
+}
+
+function setFileMode(mode) {
+  const smart = document.getElementById("file-smart"), raw = document.getElementById("file-modal-text");
+  document.querySelectorAll("#file-mode-toggle button").forEach(b =>
+    b.classList.toggle("active", b.dataset.fmode === mode));
+  if (mode === "smart" && editingMode === "raw") {
+    // Re-parse whatever is in the raw box.
+    editingParsed = editingType === "properties" ? parseProperties(raw.value) : parseSimpleYaml(raw.value);
+    renderSmartForm();
+  } else if (mode === "raw" && editingMode === "smart") {
+    raw.value = serializeSmart();
+  }
+  editingMode = mode;
+  smart.style.display = mode === "smart" ? "block" : "none";
+  raw.style.display = mode === "smart" ? "none" : "block";
+}
+document.querySelectorAll("#file-mode-toggle button").forEach(b => b.onclick = () => setFileMode(b.dataset.fmode));
+
+async function openFile(path) {
+  const msg = document.getElementById("file-modal-msg");
+  msg.textContent = "";
+  try {
+    const r = await api("GET", `/api/servers/${enc}/file?path=${encodeURIComponent(path)}`);
+    editingPath = path;
+    editingType = detectCfgType(path);
+    document.getElementById("file-modal-title").textContent = path;
+    document.getElementById("file-modal-text").value = r.content;
+    const canSmart = editingType !== "raw";
+    document.getElementById("file-mode-toggle").style.display = canSmart ? "flex" : "none";
+    if (canSmart) {
+      editingParsed = editingType === "properties" ? parseProperties(r.content) : parseSimpleYaml(r.content);
+      const nKv = editingParsed.entries.filter(e => e.type === "kv" || e.type === "list").length;
+      if (nKv > 0) {
+        renderSmartForm();
+        setFileMode("smart");
+      } else {
+        setFileMode("raw");
+      }
+    } else {
+      setFileMode("raw");
+    }
+    document.getElementById("file-modal").style.display = "flex";
+  } catch (e) { document.getElementById("err").textContent = e.message; }
+}
+document.getElementById("file-modal-close").onclick = () => document.getElementById("file-modal").style.display = "none";
+document.getElementById("file-modal-save").onclick = async () => {
+  const msg = document.getElementById("file-modal-msg");
+  msg.textContent = "";
+  try {
+    const content = editingMode === "smart" ? serializeSmart() : document.getElementById("file-modal-text").value;
+    await api("POST", `/api/servers/${enc}/file`, { path: editingPath, content });
+    msg.textContent = "saved ✓";
+    setTimeout(() => { document.getElementById("file-modal").style.display = "none"; }, 600);
+    loadFiles(curPath);
+  } catch (e) { msg.textContent = "error: " + e.message; }
+};
+
+// Backups
+async function loadBackups() {
+  const body = document.getElementById("backups-body");
+  try {
+    const r = await api("GET", `/api/backups/${enc}`);
+    body.innerHTML = r.backups.map(b =>
+      `<tr><td>${esc(b.name)}</td><td class="muted small">${fmtBytes(b.size_bytes)}</td>
+       <td><a class="btn" href="/api/backups/${enc}/download?file=${encodeURIComponent(b.name)}">Download</a>
+       <button class="btn danger" data-del="${esc(b.name)}">Delete</button></td></tr>`).join("")
+      || `<tr><td colspan="3" class="muted">no backups yet</td></tr>`;
+    body.querySelectorAll("[data-del]").forEach(btn => btn.onclick = async () => {
+      if (!confirm("Delete " + btn.dataset.del + "?")) return;
+      await api("DELETE", `/api/backups/${enc}/delete?file=${encodeURIComponent(btn.dataset.del)}`);
+      loadBackups();
+    });
+  } catch (e) { body.innerHTML = `<tr><td colspan="3" class="error">${esc(e.message)}</td></tr>`; }
+}
+document.getElementById("backup-btn").onclick = async () => {
+  const msg = document.getElementById("backup-msg");
+  msg.textContent = "backing up…";
+  try { const r = await api("POST", `/api/backups/${enc}`); msg.textContent = "created " + r.file; loadBackups(); }
+  catch (e) { msg.textContent = "error: " + e.message; }
+};
+
+// Plugins tab
+async function loadInstalled() {
+  const body = document.getElementById("installed-body");
+  try {
+    const r = await api("GET", `/api/servers/${enc}/plugins`);
+    body.innerHTML = r.plugins.map(p =>
+      `<tr><td>${esc(p.file)}</td><td class="muted small">${fmtBytes(p.size_bytes)}</td>
+       <td><button class="btn danger" data-del="${esc(p.file)}">Delete</button></td></tr>`).join("")
+      || `<tr><td colspan="3" class="muted">no plugins installed</td></tr>`;
+    body.querySelectorAll("[data-del]").forEach(btn => btn.onclick = async () => {
+      if (!confirm("Delete " + btn.dataset.del + "?")) return;
+      await api("DELETE", `/api/servers/${enc}/plugins/delete?file=${encodeURIComponent(btn.dataset.del)}`);
+      loadInstalled();
+    });
+  } catch (e) { body.innerHTML = `<tr><td colspan="3" class="error">${esc(e.message)}</td></tr>`; }
+}
+
+function pluginCardHTML(source, id, title, desc, downloads, icon) {
+  return `<div class="plugin-card" data-detail="${source}:${esc(id)}">
+    ${icon ? `<img src="${esc(icon)}" alt="">` : ""}
+    <strong>${esc(title)}</strong>
+    <div class="small muted">${esc((desc || "").slice(0, 120))}</div>
+    <div class="small muted">DL ${Number(downloads || 0).toLocaleString()}</div>
+  </div>`;
+}
+
+async function pluginSearch() {
+  const q = document.getElementById("plugin-q").value.trim();
+  const grid = document.getElementById("plugin-results");
+  grid.innerHTML = `<p class="muted">searching…</p>`;
+  try {
+    if (psrc === "modrinth") {
+      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/search?q=${encodeURIComponent(q)}&sort=relevance`);
+      grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("")
+        || `<p class="muted">no results</p>`;
+    } else {
+      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/search?q=${encodeURIComponent(q)}`);
+      grid.innerHTML = r.hits.map(h => pluginCardHTML("spiget", h.id, h.name, h.tag, h.downloads, "")).join("")
+        || `<p class="muted">no results</p>`;
+    }
+    bindCards();
+  } catch (e) { grid.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+async function pluginTrending() {
+  const grid = document.getElementById("plugin-results");
+  grid.innerHTML = `<p class="muted">loading…</p>`;
+  try {
+    if (psrc === "modrinth") {
+      const r = await api("GET", `/api/servers/${enc}/plugins/modrinth/trending`);
+      grid.innerHTML = r.hits.map(h => pluginCardHTML("modrinth", h.project_id, h.title, h.description, h.downloads, h.icon_url)).join("");
+    } else {
+      const r = await api("GET", `/api/servers/${enc}/plugins/spiget/trending`);
+      grid.innerHTML = r.hits.map(h => pluginCardHTML("spiget", h.id, h.name, h.tag, h.downloads, "")).join("");
+    }
+    bindCards();
+  } catch (e) { grid.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+function bindCards() {
+  document.querySelectorAll(".plugin-card").forEach(c => c.onclick = () => pluginDetail(c.dataset.detail));
+}
+document.getElementById("plugin-search").onclick = pluginSearch;
+document.getElementById("plugin-trending").onclick = pluginTrending;
+document.getElementById("plugin-q").addEventListener("keydown", e => { if (e.key === "Enter") pluginSearch(); });
+
+function closePluginModal() {
+  document.getElementById("plugin-modal").style.display = "none";
+  document.getElementById("plugin-modal-body").innerHTML = "";
+}
+document.getElementById("plugin-modal-close").onclick = closePluginModal;
+document.getElementById("plugin-modal").addEventListener("click", e => {
+  if (e.target.id === "plugin-modal") closePluginModal();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closePluginModal();
+});
+
+async function pluginDetail(key) {
+  const [source, id] = key.split(/:(.+)/);
+  const modal = document.getElementById("plugin-modal");
+  const el = document.getElementById("plugin-modal-body");
+  el.innerHTML = `<p class="muted">loading…</p>`;
+  modal.style.display = "flex";
+  try {
+    let title, desc, versions, verLabel;
+    if (source === "modrinth") {
+      const [p, v] = await Promise.all([
+        api("GET", `/api/servers/${enc}/plugins/modrinth/project/${id}`),
+        api("GET", `/api/servers/${enc}/plugins/modrinth/versions/${id}`),
+      ]);
+      title = p.title; desc = p.description; versions = v.versions;
+      verLabel = vs => `${esc(vs.version_number)} (${esc(vs.version_type)}, ${vs.game_versions.slice(0, 4).join(", ")})`;
+    } else {
+      const [r, v] = await Promise.all([
+        api("GET", `/api/servers/${enc}/plugins/spiget/resource/${id}`),
+        api("GET", `/api/servers/${enc}/plugins/spiget/versions/${id}`),
+      ]);
+      title = r.name; desc = r.tag; versions = v.versions;
+      verLabel = vs => `build ${vs.id}`;
+    }
+    el.innerHTML = `<h3 style="margin-top:0">${esc(title)}</h3>
+      <p class="muted">${esc(desc || "")}</p>
+      <label>Version${serverInfo && serverInfo.mc_version ? " (filtered to MC " + esc(serverInfo.mc_version) + ")" : ""}</label>
+      <select id="pv-select">${versions.map(v => `<option value="${esc(v.id)}">${verLabel(v)}</option>`).join("")}</select>
+      <div style="margin-top:14px"><button class="arcade amber" id="pv-install" style="padding:10px 20px">INSTALL</button>
+      <span class="small muted" id="pv-msg"></span></div>`;
+    document.getElementById("pv-install").onclick = async () => {
+      const msg = document.getElementById("pv-msg");
+      msg.textContent = "installing…";
+      try {
+        const r = await api("POST", `/api/servers/${enc}/plugins/install`, {
+          source, project: id, version: document.getElementById("pv-select").value,
+        });
+        msg.textContent = r.message;
+        loadInstalled();
+      } catch (e) { msg.textContent = "error: " + e.message; }
+    };
+  } catch (e) { el.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+}
+
+// Settings
+document.getElementById("settings-save").onclick = async () => {
+  const msg = document.getElementById("settings-msg");
+  msg.textContent = "saving…";
+  try {
+    await api("POST", `/api/servers/${enc}/settings`, {
+      xms_mb: parseInt(document.getElementById("set-xms").value, 10),
+      xmx_mb: parseInt(document.getElementById("set-xmx").value, 10),
+      mc_version: document.getElementById("set-mc").value.trim() || null,
+      behind_proxy: document.getElementById("set-proxy").value.trim() || null,
+    });
+    msg.textContent = "saved";
+    refreshHeader();
+  } catch (e) { msg.textContent = "error: " + e.message; }
+};
+
+// Geyser
+document.getElementById("geyser-btn").onclick = async () => {
+  const msg = document.getElementById("geyser-msg");
+  msg.textContent = "installing (downloads + restart, may take a bit)…";
+  try {
+    const r = await api("POST", `/api/servers/${enc}/geyser`);
+    msg.textContent = r.message;
+    refreshHeader();
+  } catch (e) { msg.textContent = "error: " + e.message; }
+};
+
+refreshHeader();
+setInterval(refreshHeader, 15000);
+</script>
+</body>
+</html>

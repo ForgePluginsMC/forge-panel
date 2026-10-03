@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>forge-panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <h1><span class="flame">🔥</span> forge-panel</h1>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/install">Install</a>
+    <button onclick="logout()">Logout</button>
+  </nav>
+</header>
+<main>
+  <div class="card screws" id="sysram" style="display:none">
+    <h3 style="margin:0 0 4px">System RAM</h3>
+    <div class="rack-row">
+      <div id="sysram-gauge"></div>
+      <div>
+        <div class="rack-label">Allocation</div>
+        <div id="sysram-led"></div>
+        <div class="small muted" id="sysram-text" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card screws" id="topology-card" style="display:none">
+    <h3>Network topology</h3>
+    <div class="topology" id="topology"></div>
+  </div>
+
+  <h2>Servers</h2>
+  <div class="grid" id="servers"></div>
+  <p class="error" id="err"></p>
+</main>
+<script src="/static/app.js"></script>
+<script>
+let sysGauge = null;
+async function load() {
+  const err = document.getElementById("err");
+  try {
+    const [servers, sys, topo] = await Promise.all([
+      api("GET", "/api/servers"),
+      api("GET", "/api/system"),
+      api("GET", "/api/topology"),
+    ]);
+
+    // System RAM gauge + LED bar
+    if (sys.ram_total_mb) {
+      document.getElementById("sysram").style.display = "block";
+      if (!sysGauge) sysGauge = makeGauge(document.getElementById("sysram-gauge"),
+        { label: "RAM allocated", unit: "MB", min: 0, max: sys.ram_total_mb, redline: sys.ram_total_mb * 0.9 });
+      sysGauge.set(sys.ram_allocated_mb);
+      ledBar(document.getElementById("sysram-led"), sys.ram_allocated_mb / sys.ram_total_mb, 24);
+      let note = `${fmtMB(sys.ram_allocated_mb)} allocated of ${fmtMB(sys.ram_total_mb)}`;
+      if (!sys.ram_allocated_complete) note += " (some running servers have no Xmx set — lower bound)";
+      if (sys.ram_allocated_mb > sys.ram_total_mb) note += " — OVERALLOCATED";
+      document.getElementById("sysram-text").textContent = note;
+    }
+
+    // Topology
+    const tcard = document.getElementById("topology-card");
+    if (topo.proxies.length || topo.standalone.length) {
+      tcard.style.display = "block";
+      let html = "";
+      for (const p of topo.proxies) {
+        html += `<div class="proxy-box">${lamp(p.running ? "green" : "red")}<strong>${esc(p.name)}</strong> <span class="muted small">:${p.port}</span><div>`;
+        for (const b of p.backends) {
+          html += `<a class="backend-chip" href="/server/${encodeURIComponent(b.name)}">${lamp(b.running ? "green" : "red")}${esc(b.name)} :${b.port}</a>`;
+        }
+        if (!p.backends.length) html += `<div class="small muted">no backends linked</div>`;
+        html += `</div></div>`;
+      }
+      for (const s of topo.standalone) {
+        html += `<div><a class="backend-chip" href="/server/${encodeURIComponent(s.name)}">${lamp(s.running ? "green" : "red")}${esc(s.name)} :${s.port}</a></div>`;
+      }
+      document.getElementById("topology").innerHTML = html;
+    }
+
+    // Server cards
+    const grid = document.getElementById("servers");
+    grid.innerHTML = servers.map(s => {
+      const mem = s.running && s.memory_mb != null
+        ? `<div><span class="seg-label">RAM</span><br><span class="seg">${s.memory_mb}</span> <span class="muted small">MB${s.xmx_mb ? " / " + s.xmx_mb : ""}</span></div>` : "";
+      const players = s.players_online != null
+        ? `<div><span class="seg-label">Players</span><br><span class="seg">${s.players_online}</span> <span class="muted small">/ ${s.players_max != null ? s.players_max : "?"}</span></div>` : "";
+      const stats = (players || mem) ? `<div class="stat-row">${players}${mem}</div>` : "";
+      const geyser = s.geyser && s.geyser.installed
+        ? `<span class="badge geyser">geyser${s.geyser.bedrock_port ? " :" + s.geyser.bedrock_port : ""}</span>` : "";
+      const role = s.role === "proxy" ? `<span class="badge proxy">proxy</span>` : "";
+      const remote = s.remote ? `<span class="badge remote">remote</span>` : "";
+      const ram = (s.xms_mb || s.xmx_mb) && !s.running
+        ? `<div class="small muted">Xms ${s.xms_mb || "—"} / Xmx ${s.xmx_mb || "—"} MB</div>` : "";
+      const actions = s.remote
+        ? `<span class="small muted">managed on ${esc(s.host || "remote host")} — start/stop there</span>`
+        : s.running
+          ? `<button class="arcade amber" onclick="event.stopPropagation();ctl('${esc(s.name)}','restart')">RESTART</button>
+             <button class="arcade red" onclick="event.stopPropagation();ctl('${esc(s.name)}','stop')">STOP</button>`
+          : `<button class="arcade green" onclick="event.stopPropagation();ctl('${esc(s.name)}','start')">START</button>`;
+      return `<div class="card screws clickable" onclick="window.location='/server/${encodeURIComponent(s.name)}'">
+        <h3 style="margin-top:0">${lamp(s.running ? "green" : "red", true)}${esc(s.name)}${role}${remote}${geyser}</h3>
+        <div class="small muted">:${s.port}${s.mc_version ? " · MC " + esc(s.mc_version) : ""}${s.behind_proxy ? " · → " + esc(s.behind_proxy) : ""}${s.remote && s.host ? " · @ " + esc(s.host) : ""}</div>
+        ${stats}${ram}
+        <div style="margin-top:14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+          <a class="btn" href="/server/${encodeURIComponent(s.name)}" onclick="event.stopPropagation()">Open</a>
+          ${actions}
+        </div>
+      </div>`;
+    }).join("");
+  } catch (e) { err.textContent = e.message; }
+}
+
+async function ctl(name, action) {
+  const err = document.getElementById("err");
+  err.textContent = "";
+  try {
+    await api("POST", `/api/servers/${encodeURIComponent(name)}/${action}`);
+    load();
+  } catch (e) { err.textContent = e.message; }
+}
+
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>

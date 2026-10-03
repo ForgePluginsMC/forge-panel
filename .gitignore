@@ -1,0 +1,19 @@
+# Rust
+/target/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Local runtime (never commit a real config or database)
+forge-panel.toml
+*.db
+*.db-journal
+forge-panel-data/
+pids/
+
+# Design refs (not for release)
+revamp-*.jpg

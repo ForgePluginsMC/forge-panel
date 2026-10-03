@@ -1,0 +1,44 @@
+# forge-panel example config — copy to forge-panel.toml and edit.
+[panel]
+bind = "127.0.0.1:8090"
+data_dir = "/opt/forge-panel/data"
+default_java = "/usr/bin/java"
+
+# Example game server
+[[servers]]
+name = "survival"
+dir = "/opt/minecraft/survival"
+jar = "paper.jar"
+jvm_args = ["-Xms1G", "-Xmx2G"]
+port = 25570
+rcon_port = 25575
+rcon_password = "changeme"
+xms_mb = 1024
+xmx_mb = 2048
+mc_version = "1.21"
+
+# Example Velocity proxy with a linked backend
+# [[servers]]
+# name = "proxy"
+# dir = "/opt/forge-panel/servers/proxy"
+# jar = "server.jar"
+# port = 25577
+# role = "proxy"
+#
+# [[servers]]
+# name = "lobby"
+# dir = "/opt/forge-panel/servers/lobby"
+# jar = "server.jar"
+# port = 25571
+# behind_proxy = "proxy"
+
+# Example REMOTE server: runs on another machine, managed over RCON only.
+# The panel never starts/stops it, binds no local ports for it, and offers
+# no files/backups/plugins — just status, players, TPS, and an RCON console.
+# Local servers need no RCON at all (console goes straight to the process).
+# [[servers]]
+# name = "remote-survival"
+# remote_host = "192.168.1.50"
+# port = 25570
+# rcon_port = 25575
+# rcon_password = "example"

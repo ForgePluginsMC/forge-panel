@@ -1,0 +1,21 @@
+[package]
+name = "forge-panel"
+version = "0.1.0"
+edition = "2021"
+description = "Self-hosted Minecraft server management panel (single-user, AMP/FORK.gg-style)"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+rusqlite = { version = "0.32", features = ["bundled"] }
+argon2 = "0.5"
+mc-query = "2.0"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json", "stream"] }
+nix = { version = "0.29", features = ["signal", "process"] }
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
