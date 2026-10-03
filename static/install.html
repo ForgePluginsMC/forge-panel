@@ -10,6 +10,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script>
 
+function showChooser() {
+  document.getElementById("chooser").style.display = "block";
+  ["sec-new", "sec-import", "sec-remote"].forEach(id => document.getElementById(id).style.display = "none");
+}
+function showSection(id) {
+  document.getElementById("chooser").style.display = "none";
+  ["sec-new", "sec-import", "sec-remote"].forEach(sid => document.getElementById(sid).style.display = sid === id ? "block" : "none");
+}
+
 function wireDropdown(wrapId, labelId, listId, hiddenId, onSelect) {
   const wrap = document.getElementById(wrapId);
   const btn = wrap.querySelector(".cfg-drop-btn");
@@ -139,9 +148,33 @@ th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11p
 
 <main class="max-w-4xl mx-auto p-4 sm:p-6 space-y-4">
 <div id="err" class="text-neon-crimson font-mono text-sm"></div>
+<div id="chooser" class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-8 text-center">
+<h2 class="font-orbitron font-bold tracking-wider text-white text-xl mb-6">ADD A SERVER</h2>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+<button onclick="showSection('sec-new')" class="bg-panel border border-panel-border-bright hover:border-neon-amber p-6 rounded-sm transition-colors group">
+<div class="text-3xl mb-3">⚒️</div>
+<div class="font-orbitron font-bold text-white group-hover:text-neon-amber tracking-wider">NEW SERVER</div>
+<div class="text-xs text-slate-400 mt-2 font-mono">Download and install fresh</div>
+</button>
+<button onclick="showSection('sec-import')" class="bg-panel border border-panel-border-bright hover:border-neon-amber p-6 rounded-sm transition-colors group">
+<div class="text-3xl mb-3">📂</div>
+<div class="font-orbitron font-bold text-white group-hover:text-neon-amber tracking-wider">IMPORT SERVER</div>
+<div class="text-xs text-slate-400 mt-2 font-mono">Point at existing files</div>
+</button>
+<button onclick="showSection('sec-remote')" class="bg-panel border border-panel-border-bright hover:border-neon-amber p-6 rounded-sm transition-colors group">
+<div class="text-3xl mb-3">🌐</div>
+<div class="font-orbitron font-bold text-white group-hover:text-neon-amber tracking-wider">ADD REMOTE SERVER</div>
+<div class="text-xs text-slate-400 mt-2 font-mono">Manage over RCON</div>
+</button>
+</div>
+</div>
 
-<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
-<h2 class="font-orbitron font-bold tracking-wider text-white mb-4">NEW SERVER</h2>
+
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="sec-new" style="display:none">
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-orbitron font-bold tracking-wider text-white">NEW SERVER</h2>
+<button class="back-btn text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
+</div>
 <label>Server type</label>
 <div class="cfg-dropdown" id="itype-wrap">
   <div class="cfg-drop-btn"><span id="itype-label">loading…</span> <span>▼</span></div>
@@ -181,8 +214,11 @@ th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11p
 <tbody id="jobs-body"></tbody></table>
 </div>
 
-<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
-<h2 class="font-orbitron font-bold tracking-wider text-white mb-2">IMPORT EXISTING</h2>
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="sec-import" style="display:none">
+<div class="flex items-center justify-between mb-2">
+<h2 class="font-orbitron font-bold tracking-wider text-white">IMPORT EXISTING</h2>
+<button class="back-btn text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
+</div>
 <p class="small muted mb-4">Point the panel at a directory that already has a server jar. Files stay where they are.</p>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 <div><label>Name</label><input id="imp-name" placeholder="my-server"></div>
@@ -194,8 +230,11 @@ th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11p
 </div>
 </div>
 
-<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
-<h2 class="font-orbitron font-bold tracking-wider text-white mb-2">ADD REMOTE SERVER</h2>
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="sec-remote" style="display:none">
+<div class="flex items-center justify-between mb-2">
+<h2 class="font-orbitron font-bold tracking-wider text-white">ADD REMOTE SERVER</h2>
+<button class="back-btn text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
+</div>
 <p class="small muted mb-4">Manage a server running on another machine over RCON. The panel won't start, stop, or read files for it — just status, players, TPS, and an RCON console.</p>
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 <div><label>Name</label><input id="rem-name" placeholder="my-remote"></div>
@@ -317,11 +356,13 @@ document.getElementById("import-btn").onclick = async () => {
   const msg = document.getElementById("import-msg");
   msg.textContent = "importing…";
   try {
+    const name = document.getElementById("imp-name").value.trim();
     await api("POST", "/api/installer/import", {
-      name: document.getElementById("imp-name").value.trim(),
+      name: name,
       dir: document.getElementById("imp-dir").value.trim(),
     });
-    msg.textContent = "imported — see the dashboard";
+    msg.textContent = "imported!";
+    setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(name); }, 1000);
   } catch (e) { msg.textContent = "error: " + e.message; }
 };
 document.getElementById("remote-btn").onclick = async () => {
@@ -334,15 +375,17 @@ document.getElementById("remote-btn").onclick = async () => {
   const port = num("rem-port"), rconPort = num("rem-rcon");
   if (!port || !rconPort) { msg.textContent = "game port and RCON port are required"; return; }
   try {
+    const name = document.getElementById("rem-name").value.trim();
     await api("POST", "/api/servers/remote", {
-      name: document.getElementById("rem-name").value.trim(),
+      name: name,
       host: document.getElementById("rem-host").value.trim(),
       port: port,
       rcon_port: rconPort,
       rcon_password: document.getElementById("rem-pw").value,
       query_port: num("rem-query"),
     });
-    msg.textContent = "added — see the dashboard";
+    msg.textContent = "added!";
+    setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(name); }, 1000);
   } catch (e) { msg.textContent = "error: " + e.message; }
 };
 loadTypes();
