@@ -572,3 +572,8 @@ a.backend-chip:hover { border-color: var(--cyan); color: #fff; filter: drop-shad
   border-bottom: 1px solid var(--line); margin-bottom: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
 }
+
+/* Inventory/Ender Chest toggle */
+.inv-toggle { display: flex; gap: 6px; margin: 12px 0 10px; }
+.inv-toggle .inv-tab { opacity: 0.6; }
+.inv-toggle .inv-tab.active { opacity: 1; border-color: var(--ember-hi); color: var(--ember-hi); box-shadow: 0 0 8px rgba(255, 123, 47, 0.4); }

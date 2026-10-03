@@ -650,6 +650,8 @@ struct InventoryActionRequest {
     action: String,       // "delete" | "move" | "repair"
     from_slot: i32,       // NBT slot number
     to_slot: Option<i32>, // NBT slot number (for move)
+    from_ender: Option<bool>, // true if from_slot is in ender chest
+    to_ender: Option<bool>,   // true if to_slot is in ender chest
 }
 
 /// Map NBT slot number to /item command slot identifier.
@@ -710,8 +712,16 @@ async fn player_inventory_action(
 
     // Validate slots.
     let from_slot = req.from_slot;
-    let from_item_slot = nbt_slot_to_item_slot(from_slot)
-        .ok_or_else(|| err(StatusCode::BAD_REQUEST, "invalid from_slot"))?;
+    let from_ender = req.from_ender.unwrap_or(false);
+    let from_item_slot = if from_ender {
+        if !(0..=26).contains(&from_slot) {
+            return Err(err(StatusCode::BAD_REQUEST, "invalid from_slot for ender chest"));
+        }
+        format!("enderchest.{}", from_slot)
+    } else {
+        nbt_slot_to_item_slot(from_slot)
+            .ok_or_else(|| err(StatusCode::BAD_REQUEST, "invalid from_slot"))?
+    };
 
     let result = match action {
         "delete" => {
@@ -723,8 +733,16 @@ async fn player_inventory_action(
         "move" => {
             let to_slot = req.to_slot
                 .ok_or_else(|| err(StatusCode::BAD_REQUEST, "move requires to_slot"))?;
-            let to_item_slot = nbt_slot_to_item_slot(to_slot)
-                .ok_or_else(|| err(StatusCode::BAD_REQUEST, "invalid to_slot"))?;
+            let to_ender = req.to_ender.unwrap_or(false);
+            let to_item_slot = if to_ender {
+                if !(0..=26).contains(&to_slot) {
+                    return Err(err(StatusCode::BAD_REQUEST, "invalid to_slot for ender chest"));
+                }
+                format!("enderchest.{}", to_slot)
+            } else {
+                nbt_slot_to_item_slot(to_slot)
+                    .ok_or_else(|| err(StatusCode::BAD_REQUEST, "invalid to_slot"))?
+            };
             // Check if target slot is occupied by trying to get it.
             // Use /item replace with `from` — this copies. Then clear source.
             // For swap: we need to save target first. Simplified: copy from→to, then clear from.

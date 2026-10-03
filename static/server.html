@@ -416,6 +416,7 @@ async function loadPlayers() {
 
 // ---- Player modal ----
 let curPlayer = null, playerPoll = null;
+let invView = 'inventory'; // 'inventory' or 'ender' — persists across modal refreshes
 function stopPlayerPoll() {
   if (playerPoll) { clearInterval(playerPoll); playerPoll = null; }
 }
@@ -434,15 +435,15 @@ function prettyItem(id) {
     .map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(" ");
 }
 
-function invGrid(items, slots, cols) {
+function invGrid(items, slots, cols, isEnder) {
   const bySlot = new Map();
   (items || []).forEach(it => { if (it && it.slot !== undefined) bySlot.set(Number(it.slot), it); });
   return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr))">` +
-    slots.map(s => invSlot(bySlot.get(s), SLOT_GHOSTS[s], s)).join("") + `</div>`;
+    slots.map(s => invSlot(bySlot.get(s), SLOT_GHOSTS[s], s, isEnder)).join("") + `</div>`;
 }
 
 // Single inventory slot. `ghost` is an optional ghost-icon data URI for empty armor slots.
-function invSlot(it, ghost, slot) {
+function invSlot(it, ghost, slot, isEnder) {
   let inner = "";
   if (it) {
     const iconName = it.id.replace(/^minecraft:/, "");
@@ -454,8 +455,9 @@ function invSlot(it, ghost, slot) {
     inner = `<img class="slot-ghost" src="${ghost}" alt="" draggable="false">`;
   }
   const slotAttr = slot !== undefined ? ` data-slot="${slot}"` : "";
+  const enderAttr = isEnder ? ` data-ender="1"` : "";
   const itemAttr = it ? ` data-item-id="${esc(it.id)}"` : "";
-  return `<div class="inv-slot${it ? " filled" : ""}"${slotAttr}${itemAttr} title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
+  return `<div class="inv-slot${it ? " filled" : ""}"${slotAttr}${enderAttr}${itemAttr} title="${it ? esc(it.id) + " x" + it.count : ""}">${inner}</div>`;
 }
 
 // Vanilla armor slot ghost icons (pixel art extracted from the client).
@@ -517,7 +519,11 @@ function playerModalHTML(info) {
     <button class="btn mini" data-act="tp">TP</button>
   </div>
   <p class="small muted" id="paction-out"></p>
-  <h4>Inventory</h4>
+  <div class="inv-toggle">
+    <button class="btn mini inv-tab${invView === 'inventory' ? ' active' : ''}" data-invtab="inventory">Inventory</button>
+    <button class="btn mini inv-tab${invView === 'ender' ? ' active' : ''}" data-invtab="ender">Ender Chest</button>
+  </div>
+  <div id="inv-view-inventory" style="display:${invView === 'inventory' ? 'block' : 'none'}">
   <div class="mc-inv">
     <div class="mc-main">
       <div class="mc-armor-col">
@@ -537,8 +543,10 @@ function playerModalHTML(info) {
       <button class="inv-slot inv-delete" data-act="clear" title="Delete entire inventory">✕</button>
     </div>
   </div>
-  <h4>Ender chest</h4>
-  ${invGrid(info.ender, range(0, 26), 9)}`;
+  </div>
+  <div id="inv-view-ender" style="display:${invView === 'ender' ? 'block' : 'none'}">
+  ${invGrid(info.ender, range(0, 26), 9, true)}
+  </div>`;
 }
 
 // Build a slot map once per render for the armor/offhand lookups.
@@ -611,12 +619,25 @@ function bindPlayerActions() {
   // Item slot interactions: click to select (ember outline only on selected),
   // then choose Delete/Move/Repair from context menu.
   bindInventorySlots(n);
+
+  // Inventory/Ender Chest toggle tabs.
+  document.querySelectorAll("#player-modal-body [data-invtab]").forEach(tab => {
+    tab.onclick = (e) => {
+      e.stopPropagation();
+      invView = tab.dataset.invtab;
+      clearSlotSelection();
+      // Re-render with the new view (quiet refresh preserves form state).
+      if (curPlayer) openPlayer(curPlayer, true);
+    };
+  });
 }
 
 // Currently selected inventory slot (NBT slot number), or null.
 let selectedInvSlot = null;
 // Item ID of selected slot, for the context menu label.
 let selectedItemId = null;
+// Whether the selected slot is in the ender chest (vs player inventory).
+let selectedIsEnder = false;
 // Move mode: when true, clicking a target slot performs the move/swap.
 let moveMode = false;
 
@@ -624,6 +645,7 @@ function clearSlotSelection() {
   document.querySelectorAll("#player-modal-body .inv-slot.selected").forEach(el => el.classList.remove("selected"));
   selectedInvSlot = null;
   selectedItemId = null;
+  selectedIsEnder = false;
   moveMode = false;
   closeContextMenu();
 }
@@ -644,7 +666,7 @@ function isDamageable(itemId) {
   return damageable.some(suffix => itemId.endsWith(suffix));
 }
 
-function showItemContextMenu(x, y, itemId, slot) {
+function showItemContextMenu(x, y, itemId, slot, isEnder) {
   closeContextMenu();
   const menu = document.createElement("div");
   menu.className = "inv-context-menu";
@@ -670,7 +692,8 @@ function showItemContextMenu(x, y, itemId, slot) {
       try {
         await api("POST", `/api/servers/${enc}/player/${encodeURIComponent(curPlayer)}/inventory/action`, {
           action: "repair",
-          from_slot: slot
+          from_slot: slot,
+          from_ender: isEnder
         });
         clearSlotSelection();
         openPlayer(curPlayer, true); // refresh
@@ -686,7 +709,8 @@ function showItemContextMenu(x, y, itemId, slot) {
     try {
       await api("POST", `/api/servers/${enc}/player/${encodeURIComponent(curPlayer)}/inventory/action`, {
         action: "delete",
-        from_slot: slot
+        from_slot: slot,
+        from_ender: isEnder
       });
       clearSlotSelection();
       openPlayer(curPlayer, true); // refresh
@@ -718,16 +742,21 @@ function bindInventorySlots(playerName) {
       e.stopPropagation();
       const slot = parseInt(slotEl.dataset.slot, 10);
       const itemId = slotEl.dataset.itemId;
+      const isEnder = slotEl.dataset.ender === "1";
       
       // Move mode: clicking a target slot performs the move/swap.
-      if (moveMode && selectedInvSlot !== null && selectedInvSlot !== slot) {
+      // Only allow move within the same container (inv→inv or ender→ender).
+      if (moveMode && selectedInvSlot !== null && (selectedInvSlot !== slot || selectedIsEnder !== isEnder)) {
         const fromSlot = selectedInvSlot;
+        const fromEnder = selectedIsEnder;
         (async () => {
           try {
             const result = await api("POST", `/api/servers/${enc}/player/${encodeURIComponent(playerName)}/inventory/action`, {
               action: "move",
               from_slot: fromSlot,
-              to_slot: slot
+              to_slot: slot,
+              from_ender: fromEnder,
+              to_ender: isEnder
             });
             clearSlotSelection();
             openPlayer(playerName, true); // refresh
@@ -746,8 +775,9 @@ function bindInventorySlots(playerName) {
         slotEl.classList.add("selected");
         selectedInvSlot = slot;
         selectedItemId = itemId;
+        selectedIsEnder = isEnder;
         moveMode = false;
-        showItemContextMenu(e.clientX, e.clientY, itemId, slot);
+        showItemContextMenu(e.clientX, e.clientY, itemId, slot, isEnder);
       } else {
         clearSlotSelection();
       }
