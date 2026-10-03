@@ -199,6 +199,19 @@
     .player-row .pname { font-family: monospace; font-size: 13px; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
     .player-row .muted.small { color: #00f0ff; font-size: 14px; flex-shrink: 0; }
 
+
+    /* Force dark on ALL form elements (WebKitGTK native widgets) */
+    input, select, textarea {
+      background: #050b12 !important;
+      border: 1px solid #234468 !important;
+      color: #e2e8f0 !important;
+    }
+    input[type="checkbox"] {
+      background: transparent !important;
+      border: none !important;
+      appearance: auto !important;
+    }
+
 </style>
 </head>
 <body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">

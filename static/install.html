@@ -9,6 +9,24 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script>
+
+function wireDropdown(wrapId, labelId, listId, hiddenId, onSelect) {
+  const wrap = document.getElementById(wrapId);
+  const btn = wrap.querySelector(".cfg-drop-btn");
+  btn.onclick = (e) => { e.stopPropagation(); wrap.classList.toggle("open"); };
+  wrap.querySelectorAll(".cfg-opt").forEach(opt => {
+    opt.onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById(labelId).textContent = opt.textContent;
+      document.getElementById(hiddenId).value = opt.dataset.val;
+      wrap.classList.remove("open");
+      if (onSelect) onSelect();
+    };
+  });
+}
+document.addEventListener("click", () => {
+  document.querySelectorAll(".cfg-dropdown.open").forEach(d => d.classList.remove("open"));
+});
 tailwind.config = {
   theme: { extend: {
     colors: {
@@ -75,6 +93,29 @@ th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11p
 .toggle input:checked ~ .tslot { background: #00f0ff33; border: 1px solid #00f0ff; }
 .toggle input:checked ~ .tknob { left: 27px; background: #00f0ff; }
 .tlabel { display: none; }
+
+    /* Custom dropdown (replaces native select) */
+    .cfg-dropdown { position: relative; width: 100%; }
+    .cfg-drop-btn { background: #050b12; border: 1px solid #234468; color: #e2e8f0; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .cfg-drop-btn:hover { border-color: #00f0ff; }
+    .cfg-drop-list { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #09111c; border: 1px solid #234468; border-top: none; border-radius: 0 0 4px 4px; z-index: 100; max-height: 250px; overflow-y: auto; }
+    .cfg-dropdown.open .cfg-drop-list { display: block; }
+    .cfg-opt { padding: 8px 12px; font-family: monospace; font-size: 13px; color: #e2e8f0; cursor: pointer; }
+    .cfg-opt:hover { background: #15293f; }
+
+
+    /* Force dark on ALL form elements (WebKitGTK native widgets) */
+    input, select, textarea {
+      background: #050b12 !important;
+      border: 1px solid #234468 !important;
+      color: #e2e8f0 !important;
+    }
+    input[type="checkbox"] {
+      background: transparent !important;
+      border: none !important;
+      appearance: auto !important;
+    }
+
 </style>
 </head>
 <body class="min-h-screen font-mono text-sm">
@@ -102,10 +143,18 @@ th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11p
 <div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
 <h2 class="font-orbitron font-bold tracking-wider text-white mb-4">NEW SERVER</h2>
 <label>Server type</label>
-<select id="itype"></select>
+<div class="cfg-dropdown" id="itype-wrap">
+  <div class="cfg-drop-btn"><span id="itype-label">loading…</span> <span>▼</span></div>
+  <div class="cfg-drop-list" id="itype-list"></div>
+  <input type="hidden" id="itype" value="">
+</div>
 <div id="version-row">
 <label>Version</label>
-<select id="iversion"></select>
+<div class="cfg-dropdown" id="iversion-wrap">
+  <div class="cfg-drop-btn"><span id="iversion-label">loading…</span> <span>▼</span></div>
+  <div class="cfg-drop-list" id="iversion-list"></div>
+  <input type="hidden" id="iversion" value="">
+</div>
 <div class="mt-3 flex gap-3 items-center">
 <label class="toggle"><input type="checkbox" id="isnap"><span class="tslot"></span><span class="tknob"></span></label>
 <span class="small muted">Include snapshots &amp; pre-releases</span>
@@ -169,29 +218,40 @@ let types = [];
 async function loadTypes() {
   const r = await api("GET", "/api/installer/types");
   types = r.types;
-  const sel = document.getElementById("itype");
-  sel.innerHTML = types.map(t => `<option value="${t.id}">${t.id}${t.needs_version_input ? " (BuildTools)" : ""}</option>`).join("");
-  sel.onchange = onTypeChange;
+  const list = document.getElementById("itype-list");
+  list.innerHTML = types.map(t => `<div class="cfg-opt" data-val="${t.id}">${t.id}${t.needs_version_input ? " (BuildTools)" : ""}</div>`).join("");
+  document.getElementById("itype-label").textContent = types[0].id;
+  document.getElementById("itype").value = types[0].id;
+  wireDropdown("itype-wrap", "itype-label", "itype-list", "itype", onTypeChange);
   onTypeChange();
   document.getElementById("isnap").onchange = onTypeChange;
 }
 async function onTypeChange() {
   const t = types.find(x => x.id === document.getElementById("itype").value);
-  const sel = document.getElementById("iversion");
+  const wrap = document.getElementById("iversion-wrap");
+  const list = document.getElementById("iversion-list");
+  const label = document.getElementById("iversion-label");
+  const hidden = document.getElementById("iversion");
   const txt = document.getElementById("iversion-text");
   document.getElementById("eula-row").style.display = t.id === "velocity" ? "none" : "flex";
   if (t.needs_version_input) {
-    sel.style.display = "none"; txt.style.display = "block";
+    wrap.style.display = "none"; txt.style.display = "block";
     txt.placeholder = t.version_hint || "version";
   } else {
-    sel.style.display = "block"; txt.style.display = "none";
-    sel.innerHTML = `<option>loading versions…</option>`;
+    wrap.style.display = "block"; txt.style.display = "none";
+    label.textContent = "loading versions…";
     try {
       const snaps = document.getElementById("isnap").checked ? "&snapshots=true" : "";
       const r = await api("GET", `/api/installer/versions?type=${t.id}${snaps}`);
-      sel.innerHTML = r.versions.map(v => `<option value="${esc(v.id)}">${esc(v.id)}${v.label ? " — " + esc(v.label) : ""}${v.snapshot ? " ⚠" : ""}</option>`).join("")
-        || `<option value="">(no versions)</option>`;
-    } catch (e) { sel.innerHTML = `<option value="">error: ${esc(e.message)}</option>`; }
+      if (r.versions.length) {
+        list.innerHTML = r.versions.map(v => `<div class="cfg-opt" data-val="${esc(v.id)}">${esc(v.id)}${v.label ? " — " + esc(v.label) : ""}${v.snapshot ? " ⚠" : ""}</div>`).join("");
+        label.textContent = r.versions[0].id;
+        hidden.value = r.versions[0].id;
+        wireDropdown("iversion-wrap", "iversion-label", "iversion-list", "iversion", null);
+      } else {
+        label.textContent = "(no versions)";
+      }
+    } catch (e) { label.textContent = "error: " + e.message; }
   }
 }
 document.getElementById("install-btn").onclick = async () => {

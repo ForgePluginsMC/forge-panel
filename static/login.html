@@ -43,6 +43,19 @@ body {
 .clip-tech-chamfer {
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
 }
+
+    /* Force dark on ALL form elements (WebKitGTK native widgets) */
+    input, select, textarea {
+      background: #050b12 !important;
+      border: 1px solid #234468 !important;
+      color: #e2e8f0 !important;
+    }
+    input[type="checkbox"] {
+      background: transparent !important;
+      border: none !important;
+      appearance: auto !important;
+    }
+
 </style>
 </head>
 <body class="min-h-screen flex items-center justify-center font-mono">
