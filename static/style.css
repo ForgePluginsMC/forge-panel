@@ -188,7 +188,8 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 .pactions.compact { gap: 6px; align-items: center; }
 .pactions.compact .arcade { padding: 5px 10px; font-size: 11px; }
 .pactions.compact .btn.mini, .pactions.compact select.mini, .pactions.compact input.mini { padding: 5px 8px; font-size: 11px; }
-.pactions.compact input.mini { width: auto; }
+.pactions.compact select.mini { max-width: 110px; }
+.pactions.compact input.mini { width: auto; max-width: 140px; }
 .psep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
 .prow { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 10px; align-items: flex-end; }
 .prow input, .prow select { margin-right: 6px; }
@@ -211,7 +212,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 22px; position: relative; z-i
 .inv-grid > .inv-slot { min-width: 0; }
 .inv-delete { cursor: pointer; font-size: 20px; font-weight: 700; color: #ff5d5d; background: rgba(40, 8, 12, 0.9); min-width: 48px; }
 .inv-delete:hover { background: rgba(80, 12, 18, 0.95); color: #ff8080; }
-.slot-ghost { width: 62%; height: 62%; object-fit: contain; image-rendering: pixelated; opacity: 0.6; pointer-events: none; }
+.slot-ghost { width: 70%; height: 70%; object-fit: contain; image-rendering: pixelated; opacity: 0.85; pointer-events: none; filter: brightness(1.4); }
 .badge.geyser { color: var(--green); border-color: rgba(57, 255, 122, 0.5); text-shadow: 0 0 8px rgba(57, 255, 122, 0.6); }
 
 input, select, textarea {
