@@ -437,7 +437,7 @@ function prettyItem(id) {
 function invGrid(items, slots, cols) {
   const bySlot = new Map();
   (items || []).forEach(it => { if (it && it.slot !== undefined) bySlot.set(Number(it.slot), it); });
-  return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, 1fr)">` +
+  return `<div class="inv-grid" style="grid-template-columns: repeat(${cols}, minmax(0, 1fr))">` +
     slots.map(s => invSlot(bySlot.get(s), SLOT_GHOSTS[s])).join("") + `</div>`;
 }
 
