@@ -178,22 +178,17 @@
     .cfg-section { font-family: monospace; font-size: 12px; color: #00f0ff; margin: 16px 0 8px 0; padding-bottom: 4px; border-bottom: 1px solid #1e3a52; }
 
 
-    /* Dark select for dynamic content */
-    .dark-select {
-      background: #050b12 !important;
-      border: 1px solid #234468 !important;
-      color: #e2e8f0 !important;
-      padding: 8px 12px !important;
-      border-radius: 4px !important;
-      font-family: monospace !important;
-      font-size: 13px !important;
-      width: 100% !important;
-      max-width: 300px !important;
-    }
-    .dark-select option {
-      background: #09111c !important;
-      color: #e2e8f0 !important;
-    }
+
+
+    /* Custom dropdown (replaces native select) */
+    .cfg-dropdown { position: relative; width: 100%; max-width: 300px; }
+    .cfg-drop-btn { background: #050b12; border: 1px solid #234468; color: #e2e8f0; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .cfg-drop-btn:hover { border-color: #00f0ff; }
+    .cfg-drop-list { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #09111c; border: 1px solid #234468; border-top: none; border-radius: 0 0 4px 4px; z-index: 100; max-height: 200px; overflow-y: auto; }
+    .cfg-dropdown.open .cfg-drop-list { display: block; }
+    .cfg-opt { padding: 8px 12px; font-family: monospace; font-size: 13px; color: #e2e8f0; cursor: pointer; }
+    .cfg-opt:hover { background: #15293f; }
+    .cfg-opt.sel { color: #00f0ff; background: #0a1a2a; }
 
 </style>
 </head>
@@ -206,7 +201,7 @@
 </svg>
 </div>
 <div class="flex items-baseline space-x-2">
-<span class="font-orbitron font-extrabold tracking-widest text-lg text-white">FORGE-PANEL</span><span style="color:#ff0000;font-size:10px;margin-left:8px;">v99</span>
+<span class="font-orbitron font-extrabold tracking-widest text-lg text-white">FORGE-PANEL</span>
 <span class="text-neon-cyan/60 font-bold text-sm">/</span>
 <span class="font-orbitron font-bold text-sm tracking-wider text-neon-cyan glow-cyan-text" id="hdr-server-name">VANILLA</span>
 <span id="srv-title" style="display:none"></span>
@@ -1679,8 +1674,11 @@ function controlHTML(e) {
     case "float": return `<input type="number" step="any" class="num" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;">`;
     case "enum": {
       const cur = String(e.value).toLowerCase();
-      return `<select ${dl} class="dark-select">` + e.kind.options.map(o =>
-        `<option value="${esc(o)}"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("") + `</select>`;
+      const opts = e.kind.options.map(o =>
+        `<div class="cfg-opt${o.toLowerCase() === cur ? " sel" : ""}" data-val="${esc(o)}">${esc(o)}</div>`).join("");
+      const hiddenOpts = e.kind.options.map(o =>
+        `<option value="${esc(o)}"${o.toLowerCase() === cur ? " selected" : ""}>${esc(o)}</option>`).join("");
+      return `<div class="cfg-dropdown"><div class="cfg-drop-btn">${esc(e.value)} <span>▼</span></div><div class="cfg-drop-list">${opts}</div><select ${dl} style="display:none;">${hiddenOpts}</select></div>`;
     }
     default: return `<input type="text" ${dl} value="${esc(e.value)}" style="background:#050b12;border:1px solid #234468;color:#e2e8f0;padding:6px 10px;border-radius:4px;font-family:monospace;font-size:13px;width:100%;max-width:300px;">`;
   }
@@ -1698,6 +1696,27 @@ function renderSmartForm() {
     }
   }
   el.innerHTML = html || `<p class="muted">nothing parseable — use Raw.</p>`;
+  // Wire up custom dropdowns
+  el.querySelectorAll('.cfg-dropdown').forEach(dd => {
+    const btn = dd.querySelector('.cfg-drop-btn');
+    const list = dd.querySelector('.cfg-drop-list');
+    const hidden = dd.querySelector('select');
+    btn.onclick = (e) => { e.stopPropagation(); dd.classList.toggle('open'); };
+    list.querySelectorAll('.cfg-opt').forEach(opt => {
+      opt.onclick = (e) => {
+        e.stopPropagation();
+        const val = opt.dataset.val;
+        btn.innerHTML = esc(val) + ' <span>▼</span>';
+        hidden.value = val;
+        list.querySelectorAll('.cfg-opt').forEach(o => o.classList.remove('sel'));
+        opt.classList.add('sel');
+        dd.classList.remove('open');
+      };
+    });
+  });
+  document.addEventListener('click', () => {
+    el.querySelectorAll('.cfg-dropdown.open').forEach(dd => dd.classList.remove('open'));
+  }, { once: true });
 }
 
 function readControl(e) {
