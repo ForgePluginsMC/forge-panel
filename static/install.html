@@ -443,7 +443,7 @@ async function loadTypes() {
   list.innerHTML = types.map(t => `<div class="cfg-opt" data-val="${t.id}">${t.id}${t.needs_version_input ? " (BuildTools)" : ""}</div>`).join("");
   document.getElementById("itype-label").textContent = types[0].id;
   document.getElementById("itype").value = types[0].id;
-  document.getElementById("itype-wrap")._rebind();
+  wireDropdown("itype-wrap", "itype-label", "itype-list", "itype", onTypeChange);
   onTypeChange();
   document.getElementById("isnap").onchange = onTypeChange;
 }
@@ -471,7 +471,7 @@ async function onTypeChange() {
         list.innerHTML = r.versions.map(v => `<div class="cfg-opt" data-val="${esc(v.id)}">${esc(v.id)}${v.label ? " — " + esc(v.label) : ""}</div>`).join("");
         label.textContent = r.versions[0].id;
         hidden.value = r.versions[0].id;
-        wrap._rebind();
+        wireDropdown("iversion-wrap", "iversion-label", "iversion-list", "iversion", null);
       } else label.textContent = "(no versions)";
     } catch (e) { label.textContent = "error: " + e.message; }
   }
