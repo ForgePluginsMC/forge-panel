@@ -123,6 +123,31 @@
     .plugin-card .small.muted { color: #64748b; font-size: 11px; }
     #plugin-results { display: flex; flex-direction: column; gap: 8px; }
 
+
+    /* Fix unstyled elements - HUD theme */
+    .muted { color: #64748b; }
+    .small.muted { color: #64748b; font-size: 11px; }
+    .error { color: #ff2a5f; }
+    p.error { color: #ff2a5f; font-size: 13px; }
+    select {
+      background: #050b12; border: 1px solid #234468; color: #e2e8f0;
+      padding: 8px 12px; border-radius: 4px; font-size: 13px; font-family: monospace;
+      width: 100%; max-width: 100%;
+    }
+    select:focus { outline: none; border-color: #00f0ff; }
+    select option { background: #09111c; color: #e2e8f0; }
+    label {
+      display: block; color: #94a3b8; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.05em; margin: 12px 0 6px 0; font-family: 'Orbitron', sans-serif;
+    }
+    /* Plugin detail modal */
+    #plugin-modal-body h3 {
+      color: #fff; font-family: 'Orbitron', sans-serif; font-size: 18px;
+      margin: 0 0 12px 0; letter-spacing: 0.05em;
+    }
+    #plugin-modal-body p { color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
+    #plugin-modal .box { background: #08111c; border: 1px solid #234468; }
+
 </style>
 </head>
 <body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">
@@ -1844,7 +1869,7 @@ async function pluginDetail(key) {
       <p class="muted">${esc(desc || "")}</p>
       <label>Version</label>
       <select id="pv-select">${versions.map(v => `<option value="${esc(v.id)}">${verLabel(v)}</option>`).join("")}</select>
-      <div style="margin-top:14px"><button class="arcade amber" id="pv-install" style="padding:10px 20px">INSTALL</button>
+      <div style="margin-top:14px"><button id="pv-install" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-6 py-2.5 rounded-sm clip-tech-chamfer">INSTALL</button>
       <span class="small muted" id="pv-msg"></span></div>`;
     document.getElementById("pv-install").onclick = async () => {
       const msg = document.getElementById("pv-msg");
