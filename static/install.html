@@ -9,33 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script>
-
-function showChooser() {
-  document.getElementById("chooser").style.display = "block";
-  ["sec-new", "sec-import", "sec-remote"].forEach(id => document.getElementById(id).style.display = "none");
-}
-function showSection(id) {
-  document.getElementById("chooser").style.display = "none";
-  ["sec-new", "sec-import", "sec-remote"].forEach(sid => document.getElementById(sid).style.display = sid === id ? "block" : "none");
-}
-
-function wireDropdown(wrapId, labelId, listId, hiddenId, onSelect) {
-  const wrap = document.getElementById(wrapId);
-  const btn = wrap.querySelector(".cfg-drop-btn");
-  btn.onclick = (e) => { e.stopPropagation(); wrap.classList.toggle("open"); };
-  wrap.querySelectorAll(".cfg-opt").forEach(opt => {
-    opt.onclick = (e) => {
-      e.stopPropagation();
-      document.getElementById(labelId).textContent = opt.textContent;
-      document.getElementById(hiddenId).value = opt.dataset.val;
-      wrap.classList.remove("open");
-      if (onSelect) onSelect();
-    };
-  });
-}
-document.addEventListener("click", () => {
-  document.querySelectorAll(".cfg-dropdown.open").forEach(d => d.classList.remove("open"));
-});
 tailwind.config = {
   theme: { extend: {
     colors: {
@@ -51,93 +24,58 @@ tailwind.config = {
 }
 </script>
 <style>
-body {
-  background-color: #04080e;
-  background-image: 
-    linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px);
-  background-size: 32px 32px; color: #b5c7db;
+body { background: #050b12; color: #e2e8f0; font-family: 'Rajdhani', sans-serif; }
+/* Force dark on ALL form elements (WebKitGTK native widgets) */
+input, select, textarea {
+  background: #050b12 !important;
+  border: 1px solid #234468 !important;
+  color: #e2e8f0 !important;
+  padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 13px; width: 100%;
 }
-.hud-bracket-container { position: relative; }
-.hud-bracket-container::before {
-  content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
-  border-top: 2px solid #ff9900; border-left: 2px solid #ff9900; pointer-events: none; z-index: 10;
-}
-.hud-bracket-container::after {
-  content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
-  border-bottom: 2px solid #ff9900; border-right: 2px solid #ff9900; pointer-events: none; z-index: 10;
-}
-.clip-tech-chamfer {
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-}
-.muted { color: #64748b; }
-.small.muted { color: #64748b; font-size: 11px; }
-.error { color: #ff2a5f; }
-.ok { color: #00ff88; }
-select, input[type="text"], input:not([type]) {
-  background: #050b12; border: 1px solid #234468; color: #e2e8f0;
-  padding: 8px 12px; border-radius: 4px; font-size: 13px; width: 100%;
-}
-select:focus, input:focus { outline: none; border-color: #00f0ff; }
-select option { background: #09111c; }
-label {
-  display: block; color: #94a3b8; font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.05em; margin: 12px 0 6px 0; font-family: 'Orbitron', sans-serif;
-}
-table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 8px; border-bottom: 1px solid #15293f; font-size: 13px; }
-th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
-.btn { padding: 6px 12px; background: #0d1826; border: 1px solid #234468; color: #b5c7db; border-radius: 4px; cursor: pointer; font-size: 12px; }
-.btn:hover { border-color: #00f0ff; color: #00f0ff; }
-.logbox {
-  background: #04080e; border: 1px solid #15293f; border-radius: 4px;
-  padding: 12px; font-family: monospace; font-size: 12px; color: #94a3b8;
-  max-height: 300px; overflow-y: auto; white-space: pre-wrap;
-}
+input[type="checkbox"] { background: transparent !important; border: none !important; width: auto; }
+input[type="range"] { padding: 0; border: none !important; background: transparent !important; }
+/* Custom dropdown (replaces native select) */
+.cfg-dropdown { position: relative; width: 100%; }
+.cfg-drop-btn { background: #050b12; border: 1px solid #234468; color: #e2e8f0; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.cfg-drop-btn:hover { border-color: #00f0ff; }
+.cfg-drop-list { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #09111c; border: 1px solid #234468; border-top: none; border-radius: 0 0 4px 4px; z-index: 100; max-height: 250px; overflow-y: auto; }
+.cfg-dropdown.open .cfg-drop-list { display: block; }
+.cfg-opt { padding: 8px 12px; font-family: monospace; font-size: 13px; color: #e2e8f0; cursor: pointer; }
+.cfg-opt:hover { background: #15293f; }
 /* Toggle switch */
-.toggle { position: relative; display: inline-block; width: 48px; height: 24px; }
+.toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
-.tslot { position: absolute; inset: 0; background: #15293f; border-radius: 12px; transition: 0.2s; }
-.tknob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: #64748b; border-radius: 50%; transition: 0.2s; }
-.toggle input:checked ~ .tslot { background: #00f0ff33; border: 1px solid #00f0ff; }
-.toggle input:checked ~ .tknob { left: 27px; background: #00f0ff; }
-.tlabel { display: none; }
-
-    /* Custom dropdown (replaces native select) */
-    .cfg-dropdown { position: relative; width: 100%; }
-    .cfg-drop-btn { background: #050b12; border: 1px solid #234468; color: #e2e8f0; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-    .cfg-drop-btn:hover { border-color: #00f0ff; }
-    .cfg-drop-list { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #09111c; border: 1px solid #234468; border-top: none; border-radius: 0 0 4px 4px; z-index: 100; max-height: 250px; overflow-y: auto; }
-    .cfg-dropdown.open .cfg-drop-list { display: block; }
-    .cfg-opt { padding: 8px 12px; font-family: monospace; font-size: 13px; color: #e2e8f0; cursor: pointer; }
-    .cfg-opt:hover { background: #15293f; }
-
-
-    /* Force dark on ALL form elements (WebKitGTK native widgets) */
-    input, select, textarea {
-      background: #050b12 !important;
-      border: 1px solid #234468 !important;
-      color: #e2e8f0 !important;
-    }
-    input[type="checkbox"] {
-      background: transparent !important;
-      border: none !important;
-      appearance: auto !important;
-    }
-
+.tslot { position: absolute; inset: 0; background: #15293f; border: 1px solid #234468; border-radius: 12px; transition: 0.2s; }
+.tknob { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #64748b; border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + .tslot { background: #00f0ff22; border-color: #00f0ff; }
+.toggle input:checked + .tslot + .tknob { left: 23px; background: #00f0ff; box-shadow: 0 0 8px #00f0ff; }
+/* Wizard steps */
+.wiz-step { display: none; }
+.wiz-step.active { display: block; animation: fadeIn 0.2s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.wiz-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron'; font-size: 12px; font-weight: bold; border: 2px solid #234468; color: #64748b; background: #09111c; }
+.wiz-dot.active { border-color: #00f0ff; color: #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+.wiz-dot.done { border-color: #00ff88; color: #00ff88; background: #00ff8822; }
+.wiz-line { flex: 1; height: 2px; background: #15293f; margin: 0 8px; }
+.wiz-line.done { background: #00ff88; }
+label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 6px; margin-top: 16px; font-family: 'Orbitron'; }
+label:first-child { margin-top: 0; }
+.hud-bracket-container { position: relative; }
+.hud-bracket-container::before, .hud-bracket-container::after { content: ''; position: absolute; width: 12px; height: 12px; border: 2px solid #ff9900; }
+.hud-bracket-container::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.hud-bracket-container::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+.logbox { background: #020608; border: 1px solid #15293f; border-radius: 4px; padding: 12px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+table { width: 100%; font-size: 13px; }
+th { text-align: left; padding: 8px; color: #64748b; font-family: 'Orbitron'; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #15293f; }
+td { padding: 8px; border-bottom: 1px solid #0a1520; font-family: monospace; }
+.clip-tech-chamfer { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
 </style>
 </head>
-<body class="min-h-screen font-mono text-sm">
-<header class="w-full bg-[#070e17] border-b border-panel-border px-4 py-2.5 flex items-center justify-between sticky top-0 z-50">
+<body class="min-h-screen">
+<header class="flex items-center justify-between p-4 border-b border-panel-border">
 <div class="flex items-center space-x-3">
-<div class="w-8 h-8 rounded border border-neon-amber/50 bg-neon-amber/10 flex items-center justify-center text-neon-amber">
-<svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C9.5 6 12 8.5 10 11.5C9 10 8 9.5 8 9.5C6 12.5 7 16 9 18C7.5 18 6 16.5 6 15C4.5 17.5 5 20.5 8 22C11 23.5 16 23 18 19C20 15 17 11 15 10C15 10 15.5 12 14 13C12.5 14 11 12 12 9C12.5 7.5 13.5 5.5 12 2Z"/></svg>
-</div>
-<div class="flex items-baseline space-x-2">
-<span class="font-orbitron font-extrabold tracking-widest text-lg text-white">FORGE-PANEL</span>
-<span class="text-neon-cyan/60 font-bold text-sm">/</span>
-<span class="font-orbitron font-bold text-sm tracking-wider text-neon-cyan">INSTALL</span>
-</div>
+<span class="text-2xl">🔥</span>
+<span class="font-orbitron font-black text-lg tracking-wider text-white">FORGE<span class="text-neon-amber">PANEL</span></span>
 </div>
 <nav class="flex items-center space-x-1 text-xs">
 <a href="/" class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white uppercase">Dashboard</a>
@@ -146,17 +84,19 @@ th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11p
 </nav>
 </header>
 
-<main class="max-w-4xl mx-auto p-4 sm:p-6 space-y-4">
+<main class="max-w-3xl mx-auto p-4 sm:p-6 space-y-4">
 <div id="err" class="text-neon-crimson font-mono text-sm"></div>
+
+<!-- CHOOSER -->
 <div id="chooser" class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-8 text-center">
 <h2 class="font-orbitron font-bold tracking-wider text-white text-xl mb-6">ADD A SERVER</h2>
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-<button onclick="showSection('sec-new')" class="bg-panel border border-panel-border-bright hover:border-neon-amber p-6 rounded-sm transition-colors group">
+<button onclick="startWizard('new')" class="bg-panel border border-panel-border-bright hover:border-neon-amber p-6 rounded-sm transition-colors group">
 <div class="text-3xl mb-3">⚒️</div>
 <div class="font-orbitron font-bold text-white group-hover:text-neon-amber tracking-wider">NEW SERVER</div>
 <div class="text-xs text-slate-400 mt-2 font-mono">Download and install fresh</div>
 </button>
-<button onclick="showSection('sec-import')" class="bg-panel border border-panel-border-bright hover:border-neon-amber p-6 rounded-sm transition-colors group">
+<button onclick="startWizard('import')" class="bg-panel border border-panel-border-bright hover:border-neon-amber p-6 rounded-sm transition-colors group">
 <div class="text-3xl mb-3">📂</div>
 <div class="font-orbitron font-bold text-white group-hover:text-neon-amber tracking-wider">IMPORT SERVER</div>
 <div class="text-xs text-slate-400 mt-2 font-mono">Point at existing files</div>
@@ -169,91 +109,333 @@ th { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11p
 </div>
 </div>
 
-
-<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="sec-new" style="display:none">
-<div class="flex items-center justify-between mb-4">
-<h2 class="font-orbitron font-bold tracking-wider text-white">NEW SERVER</h2>
-<button class="back-btn text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
+<!-- NEW SERVER WIZARD -->
+<div id="wiz-new" class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" style="display:none">
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-orbitron font-bold tracking-wider text-white text-lg">NEW SERVER</h2>
+<button class="text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
 </div>
+<!-- Progress -->
+<div class="flex items-center mb-8" id="wiz-new-progress">
+<div class="wiz-dot active" data-step="1">1</div><div class="wiz-line"></div>
+<div class="wiz-dot" data-step="2">2</div><div class="wiz-line"></div>
+<div class="wiz-dot" data-step="3">3</div><div class="wiz-line"></div>
+<div class="wiz-dot" data-step="4">4</div>
+</div>
+
+<!-- Step 1: Type & Version -->
+<div class="wiz-step active" data-wiz="new" data-step="1">
+<h3 class="font-orbitron text-neon-cyan tracking-wider mb-4">STEP 1 — TYPE & VERSION</h3>
 <label>Server type</label>
 <div class="cfg-dropdown" id="itype-wrap">
-  <div class="cfg-drop-btn"><span id="itype-label">loading…</span> <span>▼</span></div>
-  <div class="cfg-drop-list" id="itype-list"></div>
-  <input type="hidden" id="itype" value="">
+<div class="cfg-drop-btn"><span id="itype-label">loading…</span><span>▼</span></div>
+<div class="cfg-drop-list" id="itype-list"></div>
+<input type="hidden" id="itype" value="">
 </div>
-<div id="version-row">
+<div id="version-row" class="mt-4">
 <label>Version</label>
 <div class="cfg-dropdown" id="iversion-wrap">
-  <div class="cfg-drop-btn"><span id="iversion-label">loading…</span> <span>▼</span></div>
-  <div class="cfg-drop-list" id="iversion-list"></div>
-  <input type="hidden" id="iversion" value="">
+<div class="cfg-drop-btn"><span id="iversion-label">loading…</span><span>▼</span></div>
+<div class="cfg-drop-list" id="iversion-list"></div>
+<input type="hidden" id="iversion" value="">
 </div>
 <div class="mt-3 flex gap-3 items-center">
 <label class="toggle"><input type="checkbox" id="isnap"><span class="tslot"></span><span class="tknob"></span></label>
-<span class="small muted">Include snapshots &amp; pre-releases</span>
+<span class="text-sm text-slate-400">Include snapshots & pre-releases</span>
 </div>
 <input id="iversion-text" style="display:none" placeholder="e.g. 1.21" class="mt-2">
 </div>
-<label>Name (letters, numbers, - and _)</label>
+</div>
+
+<!-- Step 2: Resources -->
+<div class="wiz-step" data-wiz="new" data-step="2">
+<h3 class="font-orbitron text-neon-cyan tracking-wider mb-4">STEP 2 — RESOURCES</h3>
+<label>Server name (letters, numbers, - and _)</label>
 <input id="iname" placeholder="my-server">
-<div id="eula-row" class="mt-3 flex gap-3 items-center">
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div>
+<label>Min RAM (MB)</label>
+<input id="ixms" type="number" value="1024" min="256" max="65536" step="256">
+</div>
+<div>
+<label>Max RAM (MB)</label>
+<input id="ixmx" type="number" value="2048" min="256" max="65536" step="256">
+</div>
+</div>
+<label>Game port</label>
+<input id="iport" type="number" value="25570" min="1024" max="65535">
+<label>JVM flags (one per line, optional)</label>
+<textarea id="ijvm" rows="3" placeholder="-XX:+UseG1GC&#10;-XX:MaxGCPauseMillis=50"></textarea>
+</div>
+
+<!-- Step 3: Game Settings -->
+<div class="wiz-step" data-wiz="new" data-step="3">
+<h3 class="font-orbitron text-neon-cyan tracking-wider mb-4">STEP 3 — GAME SETTINGS</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between bg-panel p-4 rounded border border-panel-border">
+<div><div class="font-bold text-white">Online mode</div><div class="text-xs text-slate-400">Require Mojang authentication</div></div>
+<label class="toggle"><input type="checkbox" id="ionline" checked><span class="tslot"></span><span class="tknob"></span></label>
+</div>
+<div class="flex items-center justify-between bg-panel p-4 rounded border border-panel-border">
+<div><div class="font-bold text-white">Whitelist</div><div class="text-xs text-slate-400">Only allow listed players</div></div>
+<label class="toggle"><input type="checkbox" id="iwhitelist"><span class="tslot"></span><span class="tknob"></span></label>
+</div>
+<div>
+<label>Difficulty</label>
+<div class="cfg-dropdown" id="idiff-wrap">
+<div class="cfg-drop-btn"><span id="idiff-label">normal</span><span>▼</span></div>
+<div class="cfg-drop-list" id="idiff-list">
+<div class="cfg-opt" data-val="peaceful">peaceful</div>
+<div class="cfg-opt" data-val="easy">easy</div>
+<div class="cfg-opt" data-val="normal">normal</div>
+<div class="cfg-opt" data-val="hard">hard</div>
+</div>
+<input type="hidden" id="idiff" value="normal">
+</div>
+</div>
+<div>
+<label>Gamemode</label>
+<div class="cfg-dropdown" id="igmode-wrap">
+<div class="cfg-drop-btn"><span id="igmode-label">survival</span><span>▼</span></div>
+<div class="cfg-drop-list" id="igmode-list">
+<div class="cfg-opt" data-val="survival">survival</div>
+<div class="cfg-opt" data-val="creative">creative</div>
+<div class="cfg-opt" data-val="adventure">adventure</div>
+<div class="cfg-opt" data-val="spectator">spectator</div>
+</div>
+<input type="hidden" id="igmode" value="survival">
+</div>
+</div>
+<div class="flex gap-3 items-center mt-4">
 <label class="toggle"><input type="checkbox" id="ieula"><span class="tslot"></span><span class="tknob"></span></label>
 <span class="text-sm">I accept the <a href="https://www.minecraft.net/en-us/eula" target="_blank" class="text-neon-cyan hover:underline">Minecraft EULA</a></span>
 </div>
-<div class="mt-4"><button id="install-btn" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider px-6 py-3 rounded-sm clip-tech-chamfer">INSTALL</button></div>
+</div>
 </div>
 
+<!-- Step 4: Review -->
+<div class="wiz-step" data-wiz="new" data-step="4">
+<h3 class="font-orbitron text-neon-cyan tracking-wider mb-4">STEP 4 — REVIEW</h3>
+<div id="new-review" class="bg-panel border border-panel-border rounded p-4 font-mono text-sm space-y-2"></div>
+<div class="mt-6"><button id="install-btn" class="w-full bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider px-6 py-3 rounded-sm clip-tech-chamfer">INSTALL SERVER</button></div>
+</div>
+
+<!-- Nav buttons -->
+<div class="flex justify-between mt-8">
+<button id="wiz-new-back" class="px-6 py-2 border border-panel-border-bright text-slate-300 rounded-sm hover:border-neon-cyan font-orbitron text-sm" onclick="wizNav('new', -1)">← BACK</button>
+<button id="wiz-new-next" class="px-6 py-2 bg-neon-cyan text-black font-orbitron font-bold text-sm rounded-sm clip-tech-chamfer" onclick="wizNav('new', 1)">NEXT →</button>
+</div>
+</div>
+
+<!-- Install progress -->
 <div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="job-card" style="display:none">
 <h3 class="font-orbitron font-bold tracking-wider text-white mb-3">INSTALL PROGRESS</h3>
 <div class="logbox" id="job-log"></div>
 </div>
 
+<!-- IMPORT WIZARD -->
+<div id="wiz-import" class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" style="display:none">
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-orbitron font-bold tracking-wider text-white text-lg">IMPORT SERVER</h2>
+<button class="text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
+</div>
+<div class="flex items-center mb-8" id="wiz-import-progress">
+<div class="wiz-dot active" data-step="1">1</div><div class="wiz-line"></div>
+<div class="wiz-dot" data-step="2">2</div><div class="wiz-line"></div>
+<div class="wiz-dot" data-step="3">3</div>
+</div>
+
+<div class="wiz-step active" data-wiz="import" data-step="1">
+<h3 class="font-orbitron text-neon-cyan tracking-wider mb-4">STEP 1 — LOCATION</h3>
+<p class="text-sm text-slate-400 mb-4">Point the panel at a directory that already has a server jar. Files stay where they are.</p>
+<label>Server name</label>
+<input id="imp-name" placeholder="my-server">
+<label>Directory (absolute path)</label>
+<input id="imp-dir" placeholder="/opt/minecraft/my-server">
+</div>
+
+<div class="wiz-step" data-wiz="import" data-step="2">
+<h3 class="font-orbitron text-neon-cyan tracking-wider mb-4">STEP 2 — RESOURCES</h3>
+<div class="grid grid-cols-2 gap-4">
+<div><label>Min RAM (MB)</label><input id="imp-xms" type="number" value="1024" min="256" max="65536" step="256"></div>
+<div><label>Max RAM (MB)</label><input id="imp-xmx" type="number" value="2048" min="256" max="65536" step="256"></div>
+</div>
+<label>Game port</label>
+<input id="imp-port" type="number" value="25570" min="1024" max="65535">
+<label>JVM flags (one per line, optional)</label>
+<textarea id="imp-jvm" rows="3" placeholder="-XX:+UseG1GC"></textarea>
+</div>
+
+<div class="wiz-step" data-wiz="import" data-step="3">
+<h3 class="font-orbitron text-neon-cyan tracking-wider mb-4">STEP 3 — REVIEW</h3>
+<div id="import-review" class="bg-panel border border-panel-border rounded p-4 font-mono text-sm space-y-2"></div>
+<div class="mt-6"><button id="import-btn" class="w-full bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-extrabold tracking-wider px-6 py-3 rounded-sm clip-tech-chamfer">IMPORT SERVER</button></div>
+<div class="mt-2 text-center"><span class="text-sm text-slate-400 font-mono" id="import-msg"></span></div>
+</div>
+
+<div class="flex justify-between mt-8">
+<button class="px-6 py-2 border border-panel-border-bright text-slate-300 rounded-sm hover:border-neon-cyan font-orbitron text-sm" onclick="wizNav('import', -1)">← BACK</button>
+<button id="wiz-import-next" class="px-6 py-2 bg-neon-cyan text-black font-orbitron font-bold text-sm rounded-sm clip-tech-chamfer" onclick="wizNav('import', 1)">NEXT →</button>
+</div>
+</div>
+
+<!-- REMOTE (single form) -->
+<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="sec-remote" style="display:none">
+<div class="flex items-center justify-between mb-2">
+<h2 class="font-orbitron font-bold tracking-wider text-white">ADD REMOTE SERVER</h2>
+<button class="text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
+</div>
+<p class="text-sm text-slate-400 mb-4">Manage a server running on another machine over RCON.</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div><label>Name</label><input id="rem-name" placeholder="my-remote"></div>
+<div><label>Host</label><input id="rem-host" placeholder="192.168.1.50"></div>
+<div><label>Game port</label><input id="rem-port" type="number" placeholder="25570"></div>
+<div><label>RCON port</label><input id="rem-rcon" type="number" placeholder="25575"></div>
+<div><label>RCON password</label><input id="rem-pw" type="password"></div>
+<div><label>Query port (optional)</label><input id="rem-query" type="number" placeholder=""></div>
+</div>
+<div class="mt-4 flex items-center gap-3">
+<button id="remote-btn" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer">ADD REMOTE</button>
+<span class="text-sm text-slate-400 font-mono" id="remote-msg"></span>
+</div>
+</div>
+
+<!-- RECENT INSTALLS -->
 <div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6">
 <h2 class="font-orbitron font-bold tracking-wider text-white mb-4">RECENT INSTALLS</h2>
 <table><thead><tr><th>Name</th><th>Type</th><th>Version</th><th>Status</th><th></th></tr></thead>
 <tbody id="jobs-body"></tbody></table>
 </div>
-
-<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="sec-import" style="display:none">
-<div class="flex items-center justify-between mb-2">
-<h2 class="font-orbitron font-bold tracking-wider text-white">IMPORT EXISTING</h2>
-<button class="back-btn text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
-</div>
-<p class="small muted mb-4">Point the panel at a directory that already has a server jar. Files stay where they are.</p>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div><label>Name</label><input id="imp-name" placeholder="my-server"></div>
-<div><label>Directory (absolute path)</label><input id="imp-dir" placeholder="/opt/minecraft/my-server"></div>
-</div>
-<div class="mt-4 flex items-center gap-3">
-<button id="import-btn" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer">IMPORT</button>
-<span class="small muted" id="import-msg"></span>
-</div>
-</div>
-
-<div class="hud-bracket-container bg-[#08111c] border border-panel-border rounded-sm p-6" id="sec-remote" style="display:none">
-<div class="flex items-center justify-between mb-2">
-<h2 class="font-orbitron font-bold tracking-wider text-white">ADD REMOTE SERVER</h2>
-<button class="back-btn text-neon-cyan hover:underline text-sm font-mono" onclick="showChooser()">← back</button>
-</div>
-<p class="small muted mb-4">Manage a server running on another machine over RCON. The panel won't start, stop, or read files for it — just status, players, TPS, and an RCON console.</p>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div><label>Name</label><input id="rem-name" placeholder="my-remote"></div>
-<div><label>Host</label><input id="rem-host" placeholder="192.168.1.50"></div>
-<div><label>Game port</label><input id="rem-port" placeholder="25570"></div>
-<div><label>RCON port</label><input id="rem-rcon" placeholder="25575"></div>
-<div><label>RCON password</label><input id="rem-pw" type="password"></div>
-<div><label>Query port (optional)</label><input id="rem-query" placeholder=""></div>
-</div>
-<div class="mt-4 flex items-center gap-3">
-<button id="remote-btn" class="bg-neon-amber hover:bg-amber-400 text-black font-orbitron font-bold text-xs tracking-wider px-5 py-2.5 rounded-sm clip-tech-chamfer">ADD REMOTE</button>
-<span class="small muted" id="remote-msg"></span>
-</div>
-</div>
 </main>
 
 <script src="/static/app.js?v=2"></script>
 <script>
+// Wizard state
+let wizState = { new: 1, import: 1 };
 let types = [];
+
+function showChooser() {
+  document.getElementById("chooser").style.display = "block";
+  ["wiz-new", "wiz-import", "sec-remote", "job-card"].forEach(id => document.getElementById(id).style.display = "none");
+}
+function showSection(id) {
+  document.getElementById("chooser").style.display = "none";
+  ["wiz-new", "wiz-import", "sec-remote"].forEach(sid => document.getElementById(sid).style.display = sid === id ? "block" : "none");
+}
+function startWizard(kind) {
+  showSection(kind === 'new' ? 'wiz-new' : 'wiz-import');
+  wizState[kind] = 1;
+  updateWizard(kind);
+}
+
+function updateWizard(kind) {
+  const step = wizState[kind];
+  document.querySelectorAll(`.wiz-step[data-wiz="${kind}"]`).forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.step) === step);
+  });
+  const dots = document.querySelectorAll(`#wiz-${kind}-progress .wiz-dot`);
+  const lines = document.querySelectorAll(`#wiz-${kind}-progress .wiz-line`);
+  dots.forEach((d, i) => {
+    const s = i + 1;
+    d.classList.toggle('active', s === step);
+    d.classList.toggle('done', s < step);
+  });
+  lines.forEach((l, i) => l.classList.toggle('done', i + 1 < step));
+  const nextBtn = document.getElementById(`wiz-${kind}-next`);
+  if (nextBtn) nextBtn.style.display = (kind === 'new' && step === 4) || (kind === 'import' && step === 3) ? 'none' : 'block';
+  if (kind === 'new' && step === 4) buildNewReview();
+  if (kind === 'import' && step === 3) buildImportReview();
+}
+
+function wizNav(kind, dir) {
+  const maxStep = kind === 'new' ? 4 : 3;
+  let step = wizState[kind] + dir;
+  if (step < 1) { showChooser(); return; }
+  if (step > maxStep) step = maxStep;
+  // Validate before going forward
+  if (dir > 0 && !validateStep(kind, wizState[kind])) return;
+  wizState[kind] = step;
+  updateWizard(kind);
+}
+
+function validateStep(kind, step) {
+  const err = document.getElementById("err");
+  err.textContent = "";
+  if (kind === 'new') {
+    if (step === 1) {
+      const t = types.find(x => x.id === document.getElementById("itype").value);
+      if (!t) { err.textContent = "pick a server type"; return false; }
+      const ver = t.needs_version_input ? document.getElementById("iversion-text").value.trim() : document.getElementById("iversion").value;
+      if (!ver) { err.textContent = "pick a version"; return false; }
+    }
+    if (step === 2) {
+      const name = document.getElementById("iname").value.trim();
+      if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) { err.textContent = "give the server a valid name (letters, numbers, - and _)"; return false; }
+    }
+    if (step === 3) {
+      if (!document.getElementById("ieula").checked) { err.textContent = "you must accept the Minecraft EULA"; return false; }
+    }
+  }
+  if (kind === 'import' && step === 1) {
+    if (!document.getElementById("imp-name").value.trim()) { err.textContent = "give the server a name"; return false; }
+    if (!document.getElementById("imp-dir").value.trim()) { err.textContent = "give the server directory"; return false; }
+  }
+  return true;
+}
+
+function buildNewReview() {
+  const t = types.find(x => x.id === document.getElementById("itype").value);
+  const ver = t.needs_version_input ? document.getElementById("iversion-text").value.trim() : document.getElementById("iversion").value;
+  const rows = [
+    ["Type", t.id],
+    ["Version", ver],
+    ["Name", document.getElementById("iname").value.trim()],
+    ["RAM", document.getElementById("ixms").value + " → " + document.getElementById("ixmx").value + " MB"],
+    ["Port", document.getElementById("iport").value],
+    ["Online mode", document.getElementById("ionline").checked ? "yes" : "no"],
+    ["Whitelist", document.getElementById("iwhitelist").checked ? "yes" : "no"],
+    ["Difficulty", document.getElementById("idiff").value],
+    ["Gamemode", document.getElementById("igmode").value],
+  ];
+  document.getElementById("new-review").innerHTML = rows.map(([k,v]) =>
+    `<div class="flex justify-between"><span class="text-slate-400">${k}</span><span class="text-white">${esc(v)}</span></div>`).join("");
+}
+
+function buildImportReview() {
+  const rows = [
+    ["Name", document.getElementById("imp-name").value.trim()],
+    ["Directory", document.getElementById("imp-dir").value.trim()],
+    ["RAM", document.getElementById("imp-xms").value + " → " + document.getElementById("imp-xmx").value + " MB"],
+    ["Port", document.getElementById("imp-port").value],
+  ];
+  document.getElementById("import-review").innerHTML = rows.map(([k,v]) =>
+    `<div class="flex justify-between"><span class="text-slate-400">${k}</span><span class="text-white">${esc(v)}</span></div>`).join("");
+}
+
+// Custom dropdown helper
+function wireDropdown(wrapId, labelId, listId, hiddenId, onSelect) {
+  const wrap = document.getElementById(wrapId);
+  const btn = wrap.querySelector(".cfg-drop-btn");
+  btn.onclick = (e) => { e.stopPropagation(); wrap.classList.toggle("open"); };
+  const bindOpts = () => wrap.querySelectorAll(".cfg-opt").forEach(opt => {
+    opt.onclick = (e) => {
+      e.stopPropagation();
+      document.getElementById(labelId).textContent = opt.textContent;
+      document.getElementById(hiddenId).value = opt.dataset.val;
+      wrap.classList.remove("open");
+      if (onSelect) onSelect();
+    };
+  });
+  bindOpts();
+  wrap._rebind = bindOpts;
+}
+document.addEventListener("click", () => {
+  document.querySelectorAll(".cfg-dropdown.open").forEach(d => d.classList.remove("open"));
+});
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// Load server types
 async function loadTypes() {
   const r = await api("GET", "/api/installer/types");
   types = r.types;
@@ -261,56 +443,85 @@ async function loadTypes() {
   list.innerHTML = types.map(t => `<div class="cfg-opt" data-val="${t.id}">${t.id}${t.needs_version_input ? " (BuildTools)" : ""}</div>`).join("");
   document.getElementById("itype-label").textContent = types[0].id;
   document.getElementById("itype").value = types[0].id;
-  wireDropdown("itype-wrap", "itype-label", "itype-list", "itype", onTypeChange);
+  document.getElementById("itype-wrap")._rebind();
   onTypeChange();
   document.getElementById("isnap").onchange = onTypeChange;
 }
+
 async function onTypeChange() {
   const t = types.find(x => x.id === document.getElementById("itype").value);
+  if (!t) return;
   const wrap = document.getElementById("iversion-wrap");
   const list = document.getElementById("iversion-list");
   const label = document.getElementById("iversion-label");
   const hidden = document.getElementById("iversion");
   const txt = document.getElementById("iversion-text");
-  document.getElementById("eula-row").style.display = t.id === "velocity" ? "none" : "flex";
   if (t.needs_version_input) {
-    wrap.style.display = "none"; txt.style.display = "block";
+    document.getElementById("version-row").querySelector(".cfg-dropdown").style.display = "none";
+    txt.style.display = "block";
     txt.placeholder = t.version_hint || "version";
   } else {
-    wrap.style.display = "block"; txt.style.display = "none";
+    document.getElementById("version-row").querySelector(".cfg-dropdown").style.display = "block";
+    txt.style.display = "none";
     label.textContent = "loading versions…";
     try {
       const snaps = document.getElementById("isnap").checked ? "&snapshots=true" : "";
       const r = await api("GET", `/api/installer/versions?type=${t.id}${snaps}`);
       if (r.versions.length) {
-        list.innerHTML = r.versions.map(v => `<div class="cfg-opt" data-val="${esc(v.id)}">${esc(v.id)}${v.label ? " — " + esc(v.label) : ""}${v.snapshot ? " ⚠" : ""}</div>`).join("");
+        list.innerHTML = r.versions.map(v => `<div class="cfg-opt" data-val="${esc(v.id)}">${esc(v.id)}${v.label ? " — " + esc(v.label) : ""}</div>`).join("");
         label.textContent = r.versions[0].id;
         hidden.value = r.versions[0].id;
-        wireDropdown("iversion-wrap", "iversion-label", "iversion-list", "iversion", null);
-      } else {
-        label.textContent = "(no versions)";
-      }
+        wrap._rebind();
+      } else label.textContent = "(no versions)";
     } catch (e) { label.textContent = "error: " + e.message; }
   }
 }
+
+// Wire static dropdowns (difficulty, gamemode)
+["idiff", "igmode"].forEach(id => {
+  const wrap = document.getElementById(id + "-wrap");
+  if (wrap) {
+    const btn = wrap.querySelector(".cfg-drop-btn");
+    btn.onclick = (e) => { e.stopPropagation(); wrap.classList.toggle("open"); };
+    wrap.querySelectorAll(".cfg-opt").forEach(opt => {
+      opt.onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById(id + "-label").textContent = opt.textContent;
+        document.getElementById(id).value = opt.dataset.val;
+        wrap.classList.remove("open");
+      };
+    });
+  }
+});
+
+// Install
 document.getElementById("install-btn").onclick = async () => {
   const err = document.getElementById("err");
   err.textContent = "";
   const type = document.getElementById("itype").value;
   const t = types.find(x => x.id === type);
-  const version = t.needs_version_input
-    ? document.getElementById("iversion-text").value.trim()
-    : document.getElementById("iversion").value;
+  const version = t.needs_version_input ? document.getElementById("iversion-text").value.trim() : document.getElementById("iversion").value;
   const name = document.getElementById("iname").value.trim();
-  const eula = type === "velocity" ? true : document.getElementById("ieula").checked;
-  if (!version) { err.textContent = "pick a version"; return; }
-  if (!name) { err.textContent = "give the server a name"; return; }
+  const jvmFlags = document.getElementById("ijvm").value.split("\n").map(s => s.trim()).filter(Boolean);
   try {
-    const r = await api("POST", "/api/installer/install", { type, version, name, eula });
+    const r = await api("POST", "/api/installer/install", {
+      type, version, name,
+      eula: document.getElementById("ieula").checked,
+      xms_mb: parseInt(document.getElementById("ixms").value) || 1024,
+      xmx_mb: parseInt(document.getElementById("ixmx").value) || 2048,
+      port: parseInt(document.getElementById("iport").value) || 25570,
+      jvm_args: jvmFlags,
+      online_mode: document.getElementById("ionline").checked,
+      whitelist: document.getElementById("iwhitelist").checked,
+      difficulty: document.getElementById("idiff").value,
+      gamemode: document.getElementById("igmode").value,
+    });
+    document.getElementById("wiz-new").style.display = "none";
     watchJob(r.job_id, name);
     loadJobs();
   } catch (e) { err.textContent = e.message; }
 };
+
 function watchJob(id, serverName) {
   const card = document.getElementById("job-card");
   const log = document.getElementById("job-log");
@@ -323,74 +534,87 @@ function watchJob(id, serverName) {
     log.scrollTop = log.scrollHeight;
   };
   es.addEventListener("done", (e) => {
-    es.close();
-    loadJobs();
+    es.close(); loadJobs();
     try {
       const d = JSON.parse(e.data);
-      if (d.status === "done" && serverName) {
+      if (d.status === "done" && serverName)
         setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(serverName); }, 1500);
-      }
     } catch {}
   });
 }
-function lamp(color) {
-  const c = color === "green" ? "#00ff88" : color === "red" ? "#ff2a5f" : "#ff9900";
-  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:6px"></span>`;
+
+function lamp(c) {
+  const col = c === "green" ? "#00ff88" : c === "red" ? "#ff2a5f" : "#ff9900";
+  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px"></span>`;
 }
+
 async function loadJobs() {
   const body = document.getElementById("jobs-body");
   try {
     const r = await api("GET", "/api/installer/jobs");
     body.innerHTML = r.jobs.map(j => {
       let st, watch = "";
-      if (j.status === "running") { st = lamp("yellow") + `<span class="muted">running…</span>`; watch = `<button class="btn" data-watch="${j.id}">Watch</button>`; }
-      else if (j.status === "done") st = lamp("green") + `<span class="ok">done</span>`;
-      else if (j.status && j.status.failed) st = lamp("red") + `<span class="error" title="${esc(j.status.failed)}">failed</span>`;
-      else st = `<span class="muted">${esc(JSON.stringify(j.status))}</span>`;
+      if (j.status === "running") { st = lamp("yellow") + `<span class="text-slate-400">running…</span>`; watch = `<button class="text-neon-cyan hover:underline text-xs" data-watch="${j.id}">Watch</button>`; }
+      else if (j.status === "done") st = lamp("green") + `<span class="text-neon-green">done</span>`;
+      else if (j.status && j.status.failed) st = lamp("red") + `<span class="text-neon-crimson">failed</span>`;
+      else st = `<span class="text-slate-400">${esc(JSON.stringify(j.status))}</span>`;
       return `<tr><td>${esc(j.name)}</td><td>${esc(j.kind)}</td><td>${esc(j.version)}</td><td>${st}</td><td>${watch}</td></tr>`;
-    }).join("") || `<tr><td colspan="5" class="muted">no installs yet</td></tr>`;
-    body.querySelectorAll("[data-watch]").forEach(b => b.onclick = () => watchJob(b.dataset.watch));
-  } catch (e) { body.innerHTML = `<tr><td colspan="5" class="error">${esc(e.message)}</td></tr>`; }
+    }).join("") || `<tr><td colspan="5" class="text-slate-500">no installs yet</td></tr>`;
+    body.querySelectorAll("[data-watch]").forEach(b => b.onclick = () => {
+      document.getElementById("wiz-new").style.display = "none";
+      document.getElementById("chooser").style.display = "none";
+      watchJob(b.dataset.watch, null);
+    });
+  } catch (e) { body.innerHTML = `<tr><td colspan="5" class="text-neon-crimson">error: ${esc(e.message)}</td></tr>`; }
 }
+
+// Import
 document.getElementById("import-btn").onclick = async () => {
   const msg = document.getElementById("import-msg");
-  msg.textContent = "importing…";
+  const err = document.getElementById("err");
+  msg.textContent = "importing…"; err.textContent = "";
+  const name = document.getElementById("imp-name").value.trim();
+  const jvmFlags = document.getElementById("imp-jvm").value.split("\n").map(s => s.trim()).filter(Boolean);
   try {
-    const name = document.getElementById("imp-name").value.trim();
     await api("POST", "/api/installer/import", {
       name: name,
       dir: document.getElementById("imp-dir").value.trim(),
+      xms_mb: parseInt(document.getElementById("imp-xms").value) || 1024,
+      xmx_mb: parseInt(document.getElementById("imp-xmx").value) || 2048,
+      port: parseInt(document.getElementById("imp-port").value) || 25570,
+      jvm_args: jvmFlags,
     });
     msg.textContent = "imported!";
     setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(name); }, 1000);
-  } catch (e) { msg.textContent = "error: " + e.message; }
+  } catch (e) { msg.textContent = ""; err.textContent = e.message; }
 };
+
+// Remote
 document.getElementById("remote-btn").onclick = async () => {
   const msg = document.getElementById("remote-msg");
-  msg.textContent = "adding…";
-  const num = (id) => {
-    const v = document.getElementById(id).value.trim();
-    return v ? parseInt(v, 10) : null;
-  };
+  const err = document.getElementById("err");
+  msg.textContent = "adding…"; err.textContent = "";
+  const num = (id) => { const v = document.getElementById(id).value.trim(); return v ? parseInt(v, 10) : null; };
   const port = num("rem-port"), rconPort = num("rem-rcon");
   if (!port || !rconPort) { msg.textContent = "game port and RCON port are required"; return; }
+  const name = document.getElementById("rem-name").value.trim();
   try {
-    const name = document.getElementById("rem-name").value.trim();
     await api("POST", "/api/servers/remote", {
-      name: name,
-      host: document.getElementById("rem-host").value.trim(),
-      port: port,
-      rcon_port: rconPort,
+      name: name, host: document.getElementById("rem-host").value.trim(),
+      port: port, rcon_port: rconPort,
       rcon_password: document.getElementById("rem-pw").value,
       query_port: num("rem-query"),
     });
     msg.textContent = "added!";
     setTimeout(() => { window.location.href = "/server/" + encodeURIComponent(name); }, 1000);
-  } catch (e) { msg.textContent = "error: " + e.message; }
+  } catch (e) { msg.textContent = ""; err.textContent = e.message; }
 };
+
+async function logout() { await api("POST", "/api/logout").catch(() => {}); window.location.href = "/login"; }
+
+// Init
 loadTypes();
 loadJobs();
-setInterval(loadJobs, 10000);
 </script>
 </body>
 </html>

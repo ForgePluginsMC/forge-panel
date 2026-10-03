@@ -545,6 +545,22 @@ pub struct InstallRequest {
     pub version: String,
     pub name: String,
     pub eula_accepted: bool,
+    #[serde(default)]
+    pub xms_mb: Option<u32>,
+    #[serde(default)]
+    pub xmx_mb: Option<u32>,
+    #[serde(default)]
+    pub port: Option<u16>,
+    #[serde(default)]
+    pub jvm_args: Vec<String>,
+    #[serde(default)]
+    pub online_mode: Option<bool>,
+    #[serde(default)]
+    pub whitelist: Option<bool>,
+    #[serde(default)]
+    pub difficulty: Option<String>,
+    #[serde(default)]
+    pub gamemode: Option<String>,
 }
 
 pub async fn start_install(state: Arc<AppState>, req: InstallRequest) -> Result<String> {
@@ -648,8 +664,13 @@ async fn run_install(state: Arc<AppState>, job_id: &str, req: InstallRequest) ->
         // EULA + server.properties.
         std::fs::write(server_dir.join("eula.txt"), "eula=true\n").context("writing eula.txt")?;
         let props = format!(
-            "server-port={}\nenable-rcon=true\nrcon.port={}\nrcon.password={}\nonline-mode=false\nmotd={}\n",
-            port, rcon_port, rcon_password, req.name
+            "server-port={}\nenable-rcon=true\nrcon.port={}\nrcon.password={}\nonline-mode={}\nwhite-list={}\ndifficulty={}\ngamemode={}\nmotd={}\n",
+            port, rcon_port, rcon_password,
+            req.online_mode.unwrap_or(true),
+            req.whitelist.unwrap_or(false),
+            req.difficulty.as_deref().unwrap_or("normal"),
+            req.gamemode.as_deref().unwrap_or("survival"),
+            req.name
         );
         std::fs::write(server_dir.join("server.properties"), props)
             .context("writing server.properties")?;
@@ -657,12 +678,16 @@ async fn run_install(state: Arc<AppState>, job_id: &str, req: InstallRequest) ->
     }
 
     // Register in the config file (append-only, then reload).
+    let xms = req.xms_mb.unwrap_or(1024);
+    let xmx = req.xmx_mb.unwrap_or(2048);
+    let mut jvm = vec![format!("-Xms{}M", xms), format!("-Xmx{}M", xmx)];
+    jvm.extend(req.jvm_args.clone());
     let entry = ServerConfig {
         name: req.name.clone(),
         dir: server_dir.clone(),
         jar: jar_name,
         java: None,
-        jvm_args: vec!["-Xms1G".to_string(), "-Xmx2G".to_string()],
+        jvm_args: jvm,
         server_args: if req.kind.is_proxy() {
             Vec::new() // velocity takes no --nogui
         } else {
@@ -672,8 +697,8 @@ async fn run_install(state: Arc<AppState>, job_id: &str, req: InstallRequest) ->
         rcon_port: if req.kind.is_proxy() { None } else { Some(rcon_port) },
         rcon_password: if req.kind.is_proxy() { None } else { Some(rcon_password) },
         query_port: None,
-        xms_mb: Some(1024),
-        xmx_mb: Some(2048),
+        xms_mb: Some(xms),
+        xmx_mb: Some(xmx),
         role: if req.kind.is_proxy() {
             config::ServerRole::Proxy
         } else {
@@ -699,13 +724,15 @@ fn port_is_free(port: u16) -> bool {
 
 fn allocate_ports(state: &Arc<AppState>) -> Result<(u16, u16)> {
     let used = state.config.read().unwrap().used_ports();
-    let mut port = 25565u16;
-    loop {
-        if used.contains(&port) || !port_is_free(port) {
-            port += 1;
-            continue;
+    let mut port = req.port.unwrap_or(25565);
+    if req.port.is_none() {
+        loop {
+            if used.contains(&port) || !port_is_free(port) {
+                port += 1;
+                continue;
+            }
+            break;
         }
-        break;
     }
     let mut rcon = port + 1000;
     while used.contains(&rcon) || !port_is_free(rcon) {
@@ -869,6 +896,14 @@ fn pump_to_job_log(
 pub struct ImportRequest {
     pub name: String,
     pub dir: PathBuf,
+    #[serde(default)]
+    pub xms_mb: Option<u32>,
+    #[serde(default)]
+    pub xmx_mb: Option<u32>,
+    #[serde(default)]
+    pub port: Option<u16>,
+    #[serde(default)]
+    pub jvm_args: Vec<String>,
 }
 
 pub async fn import_server(state: Arc<AppState>, req: ImportRequest) -> Result<()> {
@@ -921,23 +956,28 @@ pub async fn import_server(state: Arc<AppState>, req: ImportRequest) -> Result<(
         }
     }
     if port == 0 {
-        // No server.properties yet: allocate a fresh port.
-        let (p, _) = allocate_ports(&state)?;
+        // No server.properties yet: use requested port or allocate a fresh one.
+        port = req.port.unwrap_or_else(|| allocate_ports(&state).map(|(p, _)| p).unwrap_or(25570));
+    } else if let Some(p) = req.port {
         port = p;
     }
+    let xms = req.xms_mb.unwrap_or(1024);
+    let xmx = req.xmx_mb.unwrap_or(2048);
+    let mut jvm = vec![format!("-Xms{}M", xms), format!("-Xmx{}M", xmx)];
+    jvm.extend(req.jvm_args.clone());
     let entry = ServerConfig {
         name: req.name.clone(),
         dir: req.dir,
         jar,
         java: None,
-        jvm_args: vec![],
+        jvm_args: jvm,
         server_args: vec!["--nogui".to_string()],
         port,
         rcon_port: None,
         rcon_password: None,
         query_port: None,
-        xms_mb: None,
-        xmx_mb: None,
+        xms_mb: Some(xms),
+        xmx_mb: Some(xmx),
         role: config::ServerRole::default(),
         behind_proxy: None,
         remote_host: None,
