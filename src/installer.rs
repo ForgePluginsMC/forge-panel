@@ -579,6 +579,8 @@ pub async fn start_install(state: Arc<AppState>, req: InstallRequest) -> Result<
     }
 
     let job_id = state.jobs.create(req.kind, &req.version, &req.name);
+    // Persist to DB so it survives restarts.
+    let _ = state.db.save_job(&job_id, &req.name, req.kind.as_str(), &req.version, "running");
     let state2 = state.clone();
     let job_id2 = job_id.clone();
     tokio::spawn(async move {
@@ -587,12 +589,18 @@ pub async fn start_install(state: Arc<AppState>, req: InstallRequest) -> Result<
             Ok(()) => {
                 state2.jobs.push(&job_id2, "install complete");
                 state2.jobs.finish(&job_id2, JobStatus::Done);
+                if let Some(j) = state2.jobs.get(&job_id2) {
+                    let _ = state2.db.save_job(&j.id, &j.name, j.kind.as_str(), &j.version, "done");
+                }
             }
             Err(e) => {
                 state2
                     .jobs
                     .push(&job_id2, format!("FAILED: {:#}", e));
                 state2.jobs.finish(&job_id2, JobStatus::Failed(format!("{:#}", e)));
+                if let Some(j) = state2.jobs.get(&job_id2) {
+                    let _ = state2.db.save_job(&j.id, &j.name, j.kind.as_str(), &j.version, "failed");
+                }
             }
         }
     });

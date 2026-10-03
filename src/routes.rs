@@ -1362,7 +1362,28 @@ async fn installer_install(
 }
 
 async fn installer_jobs(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({ "jobs": state.jobs.list() }))
+    let mut jobs: Vec<serde_json::Value> = state.jobs.list().iter().map(|j| serde_json::to_value(j).unwrap()).collect();
+    // Merge in persisted jobs from DB (survives restarts). In-memory takes precedence.
+    let mem_ids: std::collections::HashSet<String> = jobs.iter().filter_map(|j| j.get("id").and_then(|v| v.as_str()).map(|s| s.to_string())).collect();
+    for rec in state.db.list_jobs() {
+        if !mem_ids.contains(&rec.id) {
+            jobs.push(serde_json::json!({
+                "id": rec.id,
+                "name": rec.name,
+                "kind": rec.kind,
+                "version": rec.version,
+                "status": rec.status,
+                "created_at": rec.created_at,
+            }));
+        }
+    }
+    // Sort by created_at descending.
+    jobs.sort_by(|a, b| {
+        let ca = a.get("created_at").and_then(|v| v.as_u64()).unwrap_or(0);
+        let cb = b.get("created_at").and_then(|v| v.as_u64()).unwrap_or(0);
+        cb.cmp(&ca)
+    });
+    Json(serde_json::json!({ "jobs": jobs }))
 }
 
 async fn installer_job(

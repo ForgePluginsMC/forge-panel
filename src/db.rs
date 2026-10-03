@@ -37,6 +37,14 @@ impl Db {
                 file TEXT NOT NULL,
                 size_bytes INTEGER NOT NULL DEFAULT 0,
                 created_at INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS install_jobs (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                version TEXT NOT NULL,
+                status TEXT NOT NULL,
+                created_at INTEGER NOT NULL
             );",
         )
         .context("creating tables")?;
@@ -162,4 +170,52 @@ pub struct BackupRecord {
     pub file: String,
     pub size_bytes: i64,
     pub created_at: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct JobRecord {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+    pub version: String,
+    pub status: String,
+    pub created_at: i64,
+}
+
+impl Db {
+    pub fn save_job(&self, id: &str, name: &str, kind: &str, version: &str, status: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT OR REPLACE INTO install_jobs (id, name, kind, version, status, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![id, name, kind, version, status, now_secs()],
+        )?;
+        Ok(())
+    }
+
+    pub fn list_jobs(&self) -> Vec<JobRecord> {
+        let conn = match self.conn.lock() {
+            Ok(c) => c,
+            Err(_) => return Vec::new(),
+        };
+        let mut stmt = match conn.prepare(
+            "SELECT id, name, kind, version, status, created_at FROM install_jobs ORDER BY created_at DESC LIMIT 20",
+        ) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+        let rows = match stmt.query_map([], |r| {
+            Ok(JobRecord {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                kind: r.get(2)?,
+                version: r.get(3)?,
+                status: r.get(4)?,
+                created_at: r.get(5)?,
+            })
+        }) {
+            Ok(r) => r,
+            Err(_) => return Vec::new(),
+        };
+        rows.filter_map(|r| r.ok()).collect()
+    }
 }
