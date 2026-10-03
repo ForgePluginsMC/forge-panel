@@ -634,6 +634,64 @@ async fn tps(
     Ok(Json(serde_json::json!({ "tps": tps })))
 }
 
+/// Server uptime in seconds, from process start time.
+async fn uptime(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let cfg = server_or_404(&state, &name)?;
+    let secs = state.servers.uptime_secs(&cfg).unwrap_or(0);
+    Ok(Json(serde_json::json!({ "uptime_seconds": secs })))
+}
+
+/// Get whitelist status via RCON.
+async fn whitelist_get(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let cfg = server_or_404(&state, &name)?;
+    let mut enabled = false;
+    if let Some(rp) = cfg.rcon_port {
+        let pw = cfg.rcon_password.as_deref().unwrap_or("");
+        let fut = state.rcon.run(rcon_host(&cfg), rp, pw, "whitelist list");
+        if let Ok(Ok(out)) = tokio::time::timeout(Duration::from_secs(4), fut).await {
+            // If whitelist is off, output contains "There are no whitelisted players" or similar
+            // Actually check server.properties as fallback
+            enabled = !out.to_lowercase().contains("whitelist is turned off");
+        }
+    }
+    // Fallback: check server.properties
+    if !enabled {
+        let props = cfg.dir.join("server.properties");
+        if let Ok(text) = std::fs::read_to_string(props) {
+            for line in text.lines() {
+                if line.trim().starts_with("white-list=") {
+                    enabled = line.trim().ends_with("true");
+                    break;
+                }
+            }
+        }
+    }
+    Ok(Json(serde_json::json!({ "enabled": enabled })))
+}
+
+/// Toggle whitelist via RCON.
+async fn whitelist_set(
+    State(state): State<Arc<AppState>>,
+    Path(name): Path<String>,
+    Json(body): Json<serde_json::Value>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let cfg = server_or_404(&state, &name)?;
+    let enabled = body.get("enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+    if let Some(rp) = cfg.rcon_port {
+        let pw = cfg.rcon_password.as_deref().unwrap_or("");
+        let cmd = if enabled { "whitelist on" } else { "whitelist off" };
+        let fut = state.rcon.run(rcon_host(&cfg), rp, pw, cmd);
+        let _ = tokio::time::timeout(Duration::from_secs(4), fut).await;
+    }
+    Ok(Json(serde_json::json!({ "enabled": enabled })))
+}
+
 #[derive(Serialize)]
 struct PlayersInfo {
     online: Option<u32>,
@@ -1622,6 +1680,8 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/servers/{name}/restart", post(restart_server))
         .route("/api/servers/{name}/command", post(send_command))
         .route("/api/servers/{name}/tps", get(tps))
+        .route("/api/servers/{name}/uptime", get(uptime))
+        .route("/api/servers/{name}/whitelist", get(whitelist_get).post(whitelist_set))
         .route("/api/servers/{name}/players", get(players))
         .route("/api/servers/{name}/player/{player}", get(player_info))
         .route("/api/servers/{name}/player/{player}/inventory/action", post(player_inventory_action))

@@ -219,6 +219,32 @@ impl ServerManager {
         self.running_pid(cfg).and_then(process_rss_mb)
     }
 
+    /// Uptime in seconds, from /proc/<pid>/stat starttime.
+    pub fn uptime_secs(&self, cfg: &ServerConfig) -> Option<u64> {
+        let pid = self.running_pid(cfg)?;
+        let stat = std::fs::read_to_string(format!("/proc/{}/stat", pid)).ok()?;
+        // Field 22 (0-indexed 21) is starttime in clock ticks
+        let parts: Vec<&str> = stat.split_whitespace().collect();
+        if parts.len() < 22 {
+            return None;
+        }
+        let starttime: u64 = parts[21].parse().ok()?;
+        // Get clock ticks per second (usually 100)
+        let ticks_per_sec = 100u64;
+        // Get system uptime in seconds
+        let uptime_text = std::fs::read_to_string("/proc/uptime").ok()?;
+        let system_uptime: f64 = uptime_text.split_whitespace().next()?.parse().ok()?;
+        // Process start time in seconds since boot
+        let proc_start_secs = starttime as f64 / ticks_per_sec as f64;
+        // Uptime = system uptime - proc start time
+        let uptime = system_uptime - proc_start_secs;
+        if uptime > 0.0 {
+            Some(uptime as u64)
+        } else {
+            None
+        }
+    }
+
     /// Block starting `cfg` if its Xmx plus the Xmx of every other running
     /// server would exceed system RAM. Only enforced when every running
     /// server (and the new one) has an Xmx set; otherwise we can't sum.

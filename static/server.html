@@ -78,9 +78,9 @@
   </style>
 <style>
     /* Functional overrides - keep hidden by default, JS controls visibility */
-    .tab-content { display: none; }
-    .tab-content.active { display: flex; flex-direction: column; }
-    #tab-players.active, #tab-files.active, #tab-backups.active, #tab-plugins.active, #tab-settings.active { display: block; }
+    .tab-content { display: none !important; }
+    .tab-content.active { display: flex !important; flex-direction: column; }
+    #tab-players.active, #tab-files.active, #tab-backups.active, #tab-plugins.active, #tab-settings.active { display: block !important; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: monospace; margin-right: 4px; }
     .badge.proxy { background: #1a2a3a; color: #00f0ff; border: 1px solid #00f0ff44; }
     .badge.remote { background: #2a1a3a; color: #c084fc; border: 1px solid #c084fc44; }
@@ -116,8 +116,6 @@
 </div>
 <nav class="hidden lg:flex items-center space-x-1 tracking-wider text-xs">
 <a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="/">Dashboard</a>
-<a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="#">Nodes</a>
-<a class="px-4 py-1.5 rounded-sm border border-neon-cyan text-neon-cyan bg-neon-cyan/10 font-bold shadow-[0_0_12px_rgba(0,240,255,0.25)] uppercase" href="#">Terminal</a>
 <a class="px-3.5 py-1.5 rounded-sm border border-panel-border text-slate-400 hover:text-white hover:border-slate-500 transition-colors uppercase font-medium" href="/install">Install</a>
 </nav>
 <div class="flex items-center space-x-4">
@@ -142,8 +140,8 @@
 </div>
 <div class="mt-2 text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
 <span>BIND: <strong class="text-neon-cyan font-normal" id="srv-bind">0.0.0.0:25571</strong></span>
-<span>TPS: <strong class="text-neon-green font-normal" id="srv-tps">20.0 (100%)</strong></span>
-<span>UPTIME: <strong class="text-slate-300 font-normal" id="srv-uptime">14h 28m</strong></span>
+<span>TPS: <strong class="text-neon-green font-normal" id="srv-tps">—</strong></span>
+<span>UPTIME: <strong class="text-slate-300 font-normal" id="srv-uptime">—</strong></span>
 </div>
 <div class="mt-2 text-[11px] text-slate-500" id="srv-meta">Runtime Engine: OpenJDK 64-Bit Server VM</div>
 <div class="mt-1" id="srv-badges"></div>
@@ -157,14 +155,14 @@
 <line id="ram-needle" class="filter drop-shadow-[0_0_5px_rgba(255,153,0,0.9)]" stroke="#ff9900" stroke-linecap="round" stroke-width="2.5" x1="60" x2="78" y1="65" y2="28"></line>
 <circle cx="60" cy="65" fill="#ff9900" r="4.5"></circle>
 </svg>
-<div class="text-center absolute bottom-1 flex flex-col items-center">
-<span class="font-orbitron font-extrabold text-lg text-neon-amber tracking-wider leading-none" id="ram-use-text">1,352 MB</span>
+<div class="text-center absolute -bottom-2 flex flex-col items-center" style="z-index: 5;">
+<span class="font-orbitron font-extrabold text-lg text-neon-amber tracking-wider leading-none" id="ram-use-text">—</span>
 <span class="text-[10px] uppercase text-slate-400 tracking-widest mt-1">RAM USE</span>
 </div>
 </div>
 <div class="text-xs space-y-1">
 <div class="text-slate-400">POOL ALLOCATED</div>
-<div class="text-neon-cyan font-bold text-sm" id="ram-alloc-text">4,096 MB</div>
+<div class="text-neon-cyan font-bold text-sm" id="ram-alloc-text">—</div>
 <div class="text-[10px] text-slate-500" id="ram-pct-text">33.0% LOAD LIMIT</div>
 </div>
 </div>
@@ -176,7 +174,7 @@
 <span class="font-orbitron font-extrabold text-2xl text-neon-cyan glow-cyan-text">0</span>
 <span class="text-xs text-slate-400">/ 20</span>
 </div>
-<span class="text-[10px] text-slate-500 mt-1">WHITELIST: OFF</span>
+<button class="text-[10px] text-slate-500 mt-1 hover:text-neon-cyan uppercase tracking-wider" id="whitelist-toggle">WHITELIST: OFF</button>
 </div>
 <div class="flex flex-col items-center">
 <div class="flex items-center space-x-1.5 mb-1.5">
@@ -756,10 +754,40 @@ function mcToHtml(text) {
 }
 function appendLine(t) {
   const div = document.createElement('div');
-  div.innerHTML = mcToHtml(t);
+  let html = mcToHtml(t);
+  // If no color codes were found, apply level-based coloring
+  if (html === esc(t)) {
+    const text = t;
+    if (/\[WARN\]/.test(text)) {
+      html = '<span style="color:#ff9900;font-weight:bold">[WARN]</span> <span style="color:#ffd600">' + esc(text.replace(/.*\[WARN\]\s*/, '')) + '</span>';
+    } else if (/\[ERROR\]/.test(text) || /Exception/.test(text)) {
+      html = '<span style="color:#ff2a5f;font-weight:bold">[ERROR]</span> <span style="color:#ff8888">' + esc(text) + '</span>';
+    } else if (/Done \(/.test(text)) {
+      html = '<span style="color:#00ff88;font-weight:bold">' + esc(text) + '</span>';
+    } else if (/\[Server thread\/INFO\]/.test(text)) {
+      // Color timestamp gray, [Server thread/INFO] cyan, rest white
+      html = esc(text).replace(/^(\[.*?\])\s*(\[.*?\]:)/, '<span style="color:#64748b">$1</span> <span style="color:#00f0ff">$2</span>');
+    } else if (/^\[.*?\]/.test(text)) {
+      html = esc(text).replace(/^(\[.*?\])/, '<span style="color:#64748b">$1</span>');
+    }
+  }
+  div.innerHTML = html;
+  // Apply filter if active
+  const filterInput = document.getElementById("log-filter");
+  if (filterInput && filterInput.value) {
+    const q = filterInput.value.toLowerCase();
+    if (!div.textContent.toLowerCase().includes(q)) div.style.display = "none";
+  }
   logDiv.appendChild(div);
   while (logDiv.children.length > 3000) {
-    logDiv.removeChild(logDiv.firstChild);
+    const first = logDiv.firstChild;
+    if (first.classList && first.classList.contains("scanlines-overlay")) break;
+    logDiv.removeChild(first);
+  }
+  // Auto-scroll
+  const autoScroll = document.getElementById("autoscroll");
+  if (!autoScroll || autoScroll.checked) {
+    logDiv.scrollTop = logDiv.scrollHeight;
   }
 }
 function termLine(t) { appendLine(t); logDiv.scrollTop = logDiv.scrollHeight; }
@@ -1826,6 +1854,81 @@ document.getElementById("geyser-btn").onclick = async () => {
     refreshHeader();
   } catch (e) { msg.textContent = "error: " + e.message; }
 };
+
+
+// === Console toolbar wiring ===
+(function() {
+  const logDiv = document.getElementById("console-log");
+  const filterInput = document.getElementById("log-filter");
+  const autoScroll = document.getElementById("autoscroll");
+  const clearBtn = document.getElementById("clear-log");
+  const downloadBtn = document.getElementById("download-log");
+  if (filterInput) {
+    filterInput.addEventListener("input", () => {
+      const q = filterInput.value.toLowerCase();
+      Array.from(logDiv.children).forEach(div => {
+        if (div.classList.contains("scanlines-overlay")) return;
+        div.style.display = !q || div.textContent.toLowerCase().includes(q) ? "" : "none";
+      });
+    });
+  }
+  if (clearBtn) {
+    clearBtn.onclick = () => {
+      Array.from(logDiv.children).forEach(div => {
+        if (!div.classList.contains("scanlines-overlay")) div.remove();
+      });
+    };
+  }
+  if (downloadBtn) {
+    downloadBtn.onclick = () => {
+      const lines = [];
+      Array.from(logDiv.children).forEach(div => {
+        if (!div.classList.contains("scanlines-overlay")) lines.push(div.textContent);
+      });
+      const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "server-" + NAME + "-console.log";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+  }
+})();
+
+// === Whitelist toggle ===
+(function() {
+  const btn = document.getElementById("whitelist-toggle");
+  if (!btn) return;
+  let whitelistOn = false;
+  api("GET", "/api/servers/" + enc + "/whitelist").then(r => {
+    whitelistOn = !!r.enabled;
+    btn.textContent = "WHITELIST: " + (whitelistOn ? "ON" : "OFF");
+  }).catch(() => {});
+  btn.onclick = async () => {
+    try {
+      const r = await api("POST", "/api/servers/" + enc + "/whitelist", { enabled: !whitelistOn });
+      whitelistOn = !!r.enabled;
+      btn.textContent = "WHITELIST: " + (whitelistOn ? "ON" : "OFF");
+    } catch (e) {
+      document.getElementById("err").textContent = e.message;
+    }
+  };
+})();
+
+// === Uptime ===
+async function updateUptime() {
+  try {
+    const r = await api("GET", "/api/servers/" + enc + "/uptime");
+    if (r.uptime_seconds != null) {
+      const s = Math.floor(r.uptime_seconds);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      document.getElementById("srv-uptime").textContent = h > 0 ? h + "h " + m + "m" : m + "m";
+    }
+  } catch (e) {}
+}
+setInterval(updateUptime, 30000);
+updateUptime();
 
 refreshHeader();
 setInterval(refreshHeader, 15000);
