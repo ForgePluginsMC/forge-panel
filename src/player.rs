@@ -269,7 +269,9 @@ pub fn gamemode_name(gm: i32) -> &'static str {
 /// Slots we care about: hotbar 0-8, main 9-35, armor 100-103, offhand -106.
 const INV_SLOTS: &[i32] = &[
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-    24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 100, 101, 102, 103, -106,
+    24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+    // Armor: try both vanilla NBT slots (100-103) and Bukkit slots (36-39)
+    36, 37, 38, 39, 100, 101, 102, 103, -106,
 ];
 const ENDER_SLOTS: &[i32] = &[
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
@@ -294,7 +296,7 @@ async fn fetch_items(
     let mut items = Vec::new();
     // Armor/offhand slots (100-103, -106) are often missing from the bulk
     // Inventory fetch — always query them individually.
-    let special: Vec<i32> = slots.iter().copied().filter(|&s| s >= 100 || s < 0).collect();
+    let special: Vec<i32> = slots.iter().copied().filter(|&s| s >= 36 || s < 0).collect();
     let bulk: Vec<i32> = slots.iter().copied().filter(|&s| !(s >= 100 || s < 0)).collect();
 
     if let Ok(raw) = data_get(pool, host, port, pw, player, path).await {
@@ -310,10 +312,22 @@ async fn fetch_items(
         }
         let slot_path = format!("{}[{{Slot:{}b}}]", path, slot);
         // Empty slots answer "Found no elements matching..." → Err → skipped.
-        if let Ok(raw) = data_get(pool, host, port, pw, player, &slot_path).await {
-            if let Some(item) = parse_item(&raw) {
-                items.push(item);
+        match data_get(pool, host, port, pw, player, &slot_path).await {
+            Ok(raw) => {
+                if let Some(mut item) = parse_item(&raw) {
+                    // Remap Bukkit armor slots (36-39) to vanilla NBT slots (100-103)
+                    // 36=boots→100, 37=leggings→101, 38=chestplate→102, 39=helmet→103
+                    item.slot = match item.slot {
+                        36 => 100,
+                        37 => 101,
+                        38 => 102,
+                        39 => 103,
+                        s => s,
+                    };
+                    items.push(item);
+                }
             }
+            Err(_) => {}
         }
     }
     items.sort_by_key(|it| it.slot);
