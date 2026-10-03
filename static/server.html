@@ -102,6 +102,27 @@
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
     .modal .box { background: #09111c; border: 1px solid #234468; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
     .modal .box.wide { max-width: 900px; }
+
+    /* Plugin browser styling */
+    .cat-item {
+      display: block; width: 100%; text-align: left;
+      padding: 6px 10px; margin-bottom: 2px;
+      background: transparent; border: 1px solid transparent; border-radius: 4px;
+      color: #b5c7db; font-size: 12px; font-family: monospace; cursor: pointer;
+    }
+    .cat-item:hover { background: #0d1826; border-color: #234468; color: #00f0ff; }
+    .cat-item.active { background: #00f0ff15; border-color: #00f0ff; color: #00f0ff; }
+    .plugin-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; background: #050b12; border: 1px solid #15293f; border-radius: 6px;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .plugin-card:hover { border-color: #00f0ff; }
+    .plugin-card img { width: 40px; height: 40px; border-radius: 4px; flex-shrink: 0; }
+    .plugin-card strong { color: #e2e8f0; font-size: 13px; display: block; }
+    .plugin-card .small.muted { color: #64748b; font-size: 11px; }
+    #plugin-results { display: flex; flex-direction: column; gap: 8px; }
+
 </style>
 </head>
 <body class="min-h-screen flex flex-col font-mono text-sm antialiased selection:bg-neon-cyan selection:text-black">
@@ -1746,10 +1767,12 @@ async function loadInstalled() {
 
 function pluginCardHTML(source, id, title, desc, downloads, icon) {
   return `<div class="plugin-card" data-detail="${source}:${esc(id)}">
-    ${icon ? `<img src="${esc(icon)}" alt="">` : ""}
-    <strong>${esc(title)}</strong>
-    <div class="small muted">${esc((desc || "").slice(0, 120))}</div>
-    <div class="small muted">DL ${Number(downloads || 0).toLocaleString()}</div>
+    ${icon ? `<img src="${esc(icon)}" alt="" loading="lazy">` : `<div style="width:40px;height:40px;background:#0d1826;border-radius:4px;flex-shrink:0"></div>`}
+    <div style="flex:1;min-width:0">
+      <strong>${esc(title)}</strong>
+      <div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((desc || "").slice(0, 100))}</div>
+      <div class="small muted">DL ${Number(downloads || 0).toLocaleString()}</div>
+    </div>
   </div>`;
 }
 
