@@ -545,21 +545,13 @@ pub struct InstallRequest {
     pub version: String,
     pub name: String,
     pub eula_accepted: bool,
-    #[serde(default)]
     pub xms_mb: Option<u32>,
-    #[serde(default)]
     pub xmx_mb: Option<u32>,
-    #[serde(default)]
     pub port: Option<u16>,
-    #[serde(default)]
     pub jvm_args: Vec<String>,
-    #[serde(default)]
     pub online_mode: Option<bool>,
-    #[serde(default)]
     pub whitelist: Option<bool>,
-    #[serde(default)]
     pub difficulty: Option<String>,
-    #[serde(default)]
     pub gamemode: Option<String>,
 }
 
@@ -904,13 +896,9 @@ fn pump_to_job_log(
 pub struct ImportRequest {
     pub name: String,
     pub dir: PathBuf,
-    #[serde(default)]
     pub xms_mb: Option<u32>,
-    #[serde(default)]
     pub xmx_mb: Option<u32>,
-    #[serde(default)]
     pub port: Option<u16>,
-    #[serde(default)]
     pub jvm_args: Vec<String>,
 }
 

@@ -1341,6 +1341,22 @@ struct InstallBody {
     version: String,
     name: String,
     eula: bool,
+    #[serde(default)]
+    xms_mb: Option<u32>,
+    #[serde(default)]
+    xmx_mb: Option<u32>,
+    #[serde(default)]
+    port: Option<u16>,
+    #[serde(default)]
+    jvm_args: Vec<String>,
+    #[serde(default)]
+    online_mode: Option<bool>,
+    #[serde(default)]
+    whitelist: Option<bool>,
+    #[serde(default)]
+    difficulty: Option<String>,
+    #[serde(default)]
+    gamemode: Option<String>,
 }
 
 async fn installer_install(
@@ -1354,6 +1370,14 @@ async fn installer_install(
         version: body.version,
         name: body.name,
         eula_accepted: body.eula,
+        xms_mb: body.xms_mb,
+        xmx_mb: body.xmx_mb,
+        port: body.port,
+        jvm_args: body.jvm_args,
+        online_mode: body.online_mode,
+        whitelist: body.whitelist,
+        difficulty: body.difficulty,
+        gamemode: body.gamemode,
     };
     let job_id = installer::start_install(state, req)
         .await
@@ -1444,6 +1468,14 @@ async fn installer_job_stream(
 struct ImportBody {
     name: String,
     dir: String,
+    #[serde(default)]
+    xms_mb: Option<u32>,
+    #[serde(default)]
+    xmx_mb: Option<u32>,
+    #[serde(default)]
+    port: Option<u16>,
+    #[serde(default)]
+    jvm_args: Vec<String>,
 }
 
 async fn installer_import(
@@ -1453,6 +1485,10 @@ async fn installer_import(
     let req = installer::ImportRequest {
         name: body.name,
         dir: std::path::PathBuf::from(body.dir),
+        xms_mb: body.xms_mb,
+        xmx_mb: body.xmx_mb,
+        port: body.port,
+        jvm_args: body.jvm_args,
     };
     installer::import_server(state, req)
         .await
